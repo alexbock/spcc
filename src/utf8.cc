@@ -20,18 +20,13 @@ inline static unsigned count_set_high_bits(char c) {
     return set;
 }
 
-namespace {
-    class bit_cat {
-    public:
-        void push(unsigned char c, unsigned bad_high_bit_count) {
-            c <<= bad_high_bit_count;
-            c >>= bad_high_bit_count;
-            value <<= (CHAR_BIT - bad_high_bit_count);
-            value |= static_cast<std::uint32_t>(c);
-        }
-
-        uint32_t value = 0;
-    };
+inline static void bit_cat(std::uint32_t& value,
+                           unsigned char c,
+                           unsigned bad_high_bit_count) {
+    c <<= bad_high_bit_count;
+    c >>= bad_high_bit_count;
+    value <<= (CHAR_BIT - bad_high_bit_count);
+    value |= static_cast<std::uint32_t>(c);
 }
 
 namespace utf8 {
@@ -59,15 +54,15 @@ namespace utf8 {
         if (is_ascii(str[0])) return str[0];
         else if (is_leader(str[0])) {
             auto count = count_set_high_bits(str[0]);
-            bit_cat bc;
-            bc.push(str[0], count + 1);
+            std::uint32_t utf32 = 0;
+            bit_cat(utf32, str[0], count + 1);
             for (unsigned i = 1; i < count; ++i) {
                 if (i >= str.size() || !is_continuation(str[i])) {
                     throw invalid_utf8_error("incomplete UTF-8 sequence");
                 }
-                bc.push(str[i], 2);
+                bit_cat(utf32, str[i], 2);
             }
-            return bc.value;
+            return utf32;
         } else throw invalid_utf8_error("stray UTF-8 continuation byte");
     }
 
@@ -78,5 +73,19 @@ namespace utf8 {
         auto width = result.size() > 4 ? 8U : 4U;
         std::string prefix = (width == 8) ? "\\U" : "\\u";
         return prefix + std::string(width - result.size(), '0') + result;
+    }
+
+    std::size_t count_code_points_before(const std::string& str,
+                                         std::size_t byte) {
+        std::size_t code_points = 0;
+        std::size_t i = 0;
+        for (;;) {
+            if (i > byte || i >= str.size()) break;
+            auto width = measure_code_point(str.substr(i));
+            i += width;
+            if (i > byte) break;
+            ++code_points;
+        }
+        return code_points;
     }
 }

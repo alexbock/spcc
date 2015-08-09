@@ -2,6 +2,7 @@
 #include "buffer.hh"
 #include "location.hh"
 #include "color.hh"
+#include "utf8.hh"
 
 #include <iostream>
 #include <cassert>
@@ -82,12 +83,21 @@ void emit_category_message(diagnostic_category cat, const std::string& msg) {
     std::cout << msg;
 }
 
+std::size_t fixup_caret_utf8(std::size_t col, const std::string& line) {
+    try {
+        return utf8::count_code_points_before(line, col);
+    } catch (utf8::invalid_utf8_error error) {
+        return col;
+    }
+}
+
 void emit_snippet_caret(location loc) {
     auto line_col = loc.get_line_col();
     std::string line = loc.buf->get_line(line_col.first);
+    auto caret_pos = fixup_caret_utf8(line_col.second, line);
     std::cout << line << "\n";
     set_color(color::green);
-    std::cout << std::string(line_col.second, ' ') << "^";
+    std::cout << std::string(caret_pos, ' ') << "^";
     set_color(color::standard);
     std::cout << "\n";
 }

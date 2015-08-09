@@ -15,4 +15,5 @@ namespace utf8 {
     unsigned measure_code_point(const std::string& str);
     std::uint32_t code_point_to_utf32(const std::string& str);
     std::string utf32_to_ucn(std::uint32_t u);
+    std::size_t count_code_points_before(const std::string&, std::size_t);
 }
