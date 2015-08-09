@@ -74,18 +74,4 @@ namespace utf8 {
         std::string prefix = (width == 8) ? "\\U" : "\\u";
         return prefix + std::string(width - result.size(), '0') + result;
     }
-
-    std::size_t count_code_points_before(const std::string& str,
-                                         std::size_t byte) {
-        std::size_t code_points = 0;
-        std::size_t i = 0;
-        for (;;) {
-            if (i > byte || i >= str.size()) break;
-            auto width = measure_code_point(str.substr(i));
-            i += width;
-            if (i > byte) break;
-            ++code_points;
-        }
-        return code_points;
-    }
 }

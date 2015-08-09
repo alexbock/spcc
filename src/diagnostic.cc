@@ -83,21 +83,22 @@ void emit_category_message(diagnostic_category cat, const std::string& msg) {
     std::cout << msg;
 }
 
-std::size_t fixup_caret_utf8(std::size_t col, const std::string& line) {
-    try {
-        return utf8::count_code_points_before(line, col);
-    } catch (utf8::invalid_utf8_error error) {
-        return col;
+std::string generate_caret_indent(std::size_t col, std::string line) {
+    line = line.substr(0, col);
+    std::string result;
+    for (char c : line) {
+        if (c == '\t') result += '\t';
+        else if (!utf8::is_continuation(c)) result += ' ';
     }
+    return result;
 }
 
 void emit_snippet_caret(location loc) {
     auto line_col = loc.get_line_col();
     std::string line = loc.buf->get_line(line_col.first);
-    auto caret_pos = fixup_caret_utf8(line_col.second, line);
     std::cout << line << "\n";
     set_color(color::green);
-    std::cout << std::string(caret_pos, ' ') << "^";
+    std::cout << generate_caret_indent(line_col.second, line) << "^";
     set_color(color::standard);
     std::cout << "\n";
 }

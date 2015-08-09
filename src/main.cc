@@ -6,7 +6,7 @@
 #include <iostream>
 
 int main(int argc, char** argv) {
-    buffer b{"file.c", "foo€bar"};
+    buffer b{"file.c", "\tfo\to€bar"};
     std::cout << "original:\n" << b.data << "---\n---\n";
     buffer b_pp1 = perform_pp_phase1(b);
     std::cout << "phase1:\n" << b_pp1.data << "---\n---\n";
