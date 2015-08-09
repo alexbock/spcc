@@ -115,6 +115,7 @@ void emit_snippet_caret(location loc) {
 void emit_diagnostic(const diagnostic& diag,
                      location loc,
                      const std::string& msg) {
+    if (program_options.run_internal_tests) return;
     if (loc) loc = loc.spelling();
     if (loc) emit_file_line_col(loc);
     emit_category_message(diag.category, msg);
