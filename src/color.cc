@@ -1,9 +1,11 @@
 #include "color.hh"
 #include "platform.hh"
+#include "options.hh"
 
 #include <iostream>
 
 void set_color(color c) {
+    if (!program_options.enable_color) return;
     if (!is_stdout_a_terminal()) return;
 #if defined(PLATFORM_WIN32)
     // TODO

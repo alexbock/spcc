@@ -3,6 +3,7 @@
 #include "location.hh"
 #include "color.hh"
 #include "utf8.hh"
+#include "options.hh"
 
 #include <iostream>
 #include <cassert>
@@ -25,6 +26,14 @@ static std::map<diagnostic_id, diagnostic> diags = {
             " preceded by a backslash character before any such"
             " splicing takes place",
             "[5.1.1.2]/1.2",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::opt_unrecognized,
+        {
+            "unrecognized option '%%'",
+            {},
             diagnostic_category::error
         }
     }

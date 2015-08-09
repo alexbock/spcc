@@ -6,6 +6,7 @@
 struct buffer;
 
 struct location {
+    location() = default;
     location(buffer& buffer, std::size_t index) :
     buf{&buffer},
     index{index} {

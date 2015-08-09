@@ -9,9 +9,11 @@ set(SOURCE
     src/diagnostic.cc
     src/location.cc
     src/main.cc
+    src/options.cc
     src/platform.cc
     src/pp_phase1.cc
     src/pp_phase2.cc
+    src/test.cc
     src/translator.cc
     src/utf8.cc
     src/util.cc
@@ -21,8 +23,10 @@ set(INCLUDE
     include/color.hh
     include/diagnostic.hh
     include/location.hh
+    include/options.hh
     include/platform.hh
     include/pp.hh
+    include/test.hh
     include/translator.hh
     include/utf8.hh
     include/util.hh

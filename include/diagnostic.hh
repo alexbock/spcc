@@ -8,7 +8,8 @@
 
 enum class diagnostic_id {
     pp_phase1_invalid_utf8,
-    pp_phase2_missing_newline
+    pp_phase2_missing_newline,
+    opt_unrecognized
 };
 
 enum class diagnostic_category {
@@ -28,6 +29,10 @@ std::string format_diagnostic_message(const std::string& pattern,
 
 inline std::string to_string(const char* c) {
     return { c };
+}
+
+inline std::string to_string(const std::string& s) {
+    return s;
 }
 
 template<typename... T>
