@@ -1,0 +1,34 @@
+cmake_minimum_required(VERSION 3.1)
+project(spcc)
+include_directories(
+    include
+)
+set(SOURCE
+    src/buffer.cc
+    src/color.cc
+    src/diagnostic.cc
+    src/location.cc
+    src/main.cc
+    src/platform.cc
+    src/pp_phase1.cc
+    src/pp_phase2.cc
+    src/translator.cc
+    src/utf8.cc
+    src/util.cc
+)
+set(INCLUDE
+    include/buffer.hh
+    include/color.hh
+    include/diagnostic.hh
+    include/location.hh
+    include/platform.hh
+    include/pp.hh
+    include/translator.hh
+    include/utf8.hh
+    include/util.hh
+)
+add_executable(spcc
+    ${SOURCE}
+    ${INCLUDE}
+)
+set_property(TARGET spcc PROPERTY CXX_STANDARD 14)
