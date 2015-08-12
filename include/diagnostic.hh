@@ -9,7 +9,8 @@
 enum class diagnostic_id {
     pp_phase1_invalid_utf8,
     pp_phase2_missing_newline,
-    opt_unrecognized
+    opt_unrecognized,
+    no_input_files
 };
 
 enum class diagnostic_category {

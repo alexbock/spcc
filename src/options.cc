@@ -15,20 +15,6 @@ struct option {
 
 using option_handler = void(*)(options&, const option&);
 
-#define OPT_ENABLE_DISABLE(suffix, member) \
-{ \
-    "--enable-" suffix, \
-    [](options& opts, const option& opt) { \
-        opts.member = true; \
-    } \
-}, \
-{ \
-    "--disable-" suffix, \
-    [](options& opts, const option& opt) { \
-        opts.member = false; \
-    } \
-}
-
 static void option_test(options& opts, const option& opt) {
     std::cerr << "name: " << opt.name << "\n";
     std::cerr << "arg: " << opt.argument << "\n";
@@ -38,16 +24,29 @@ static std::map<std::string, option_handler> register_options() {
     return {
         { "--long-option-test", option_test },
         { "-`", option_test },
-        OPT_ENABLE_DISABLE("internal-tests", run_internal_tests),
-        OPT_ENABLE_DISABLE("color", enable_color)
+        { "--version", [](options& opts, const option&) {
+            opts.version_requested = true;
+        }},
+        { "--help", [](options& opts, const option&) {
+            opts.help_requested = true;
+        }},
+        { "--enable-color", [](options& opts, const option&) {
+            opts.enable_color = true;
+        }},
+        { "--disable-color", [](options& opts, const option&) {
+            opts.enable_color = false;
+        }},
+        { "--run-internal-tests", [](options& opts, const option&) {
+            opts.run_internal_tests = true;
+        }},
     };
 }
 
-options parse_options(int argc, char** argv) {
+void parse_options(int argc, char** argv) {
     auto handlers = register_options();
-    options opts;
+    options& opts = program_options;
     bool only_files = false;
-    for (int i = 0; i < argc; ++i) {
+    for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         option opt;
         if (starts_with(arg, "--") && !only_files) {
@@ -87,5 +86,4 @@ options parse_options(int argc, char** argv) {
         }
         it->second(opts, opt);
     }
-    return opts;
 }

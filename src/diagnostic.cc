@@ -36,6 +36,14 @@ static std::map<diagnostic_id, diagnostic> diags = {
             {},
             diagnostic_category::error
         }
+    },
+    {
+        diagnostic_id::no_input_files,
+        {
+            "no input files",
+            {},
+            diagnostic_category::error
+        }
     }
 };
 
