@@ -72,6 +72,14 @@ static std::map<diagnostic_id, diagnostic> diags = {
             diagnostic_category::error
         }
     },
+    {
+        diagnostic_id::pp_phase3_ambiguous_parse,
+        {
+            "ambiguous parse: '%%'",
+            {},
+            diagnostic_category::error
+        }
+    },
 };
 
 const diagnostic& find_diagnostic(diagnostic_id diag_id) {
@@ -110,6 +118,7 @@ std::string to_string(diagnostic_category category) {
     switch (category) {
         case diagnostic_category::error: return "error";
         case diagnostic_category::warning: return "warning";
+        case diagnostic_category::undefined: return "undefined-behavior";
     }
 }
 

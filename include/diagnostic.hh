@@ -13,7 +13,8 @@ enum class diagnostic_id {
     no_input_files,
     pp_phase3_undef_char_in_hdr_name_quote,
     pp_phase3_undef_char_in_hdr_name_angle,
-    pp_phase3_partial_block_comment
+    pp_phase3_partial_block_comment,
+    pp_phase3_ambiguous_parse
 };
 
 enum class diagnostic_category {

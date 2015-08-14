@@ -288,8 +288,9 @@ std::vector<pp_token> perform_pp_phase3(buffer& src) {
         }
         auto& token = tentative_lexes[0];
         if (token.spelling.size() == tentative_lexes[1].spelling.size()) {
-            // TODO ambiguous parse error
-            assert("!TODO");
+            diagnose(diagnostic_id::pp_phase3_ambiguous_parse,
+                     { src, index },
+                     token.spelling);
         }
         index += token.spelling.size();
         tokens.push_back(std::move(token));
