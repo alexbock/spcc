@@ -58,10 +58,12 @@ void parse_options(int argc, char** argv) {
             auto eq_pos = arg.find('=');
             if (eq_pos == std::string::npos) {
                 opt.name = arg.substr(2);
+#if 0
                 if (i != argc - 1 && !starts_with(argv[i + 1], "-")) {
                     ++i;
                     opt.argument = argv[i];
                 }
+#endif
             } else {
                 opt.name = arg.substr(2, eq_pos - 2);
                 opt.argument = arg.substr(eq_pos + 1);

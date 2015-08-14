@@ -44,7 +44,34 @@ static std::map<diagnostic_id, diagnostic> diags = {
             {},
             diagnostic_category::error
         }
-    }
+    },
+    {
+        diagnostic_id::pp_phase3_undef_char_in_hdr_name_quote,
+        {
+            "if the characters ', \\, //, or /* occur in the"
+            " sequence between the \" delimiters, the behavior is undefined",
+            "[6.4.7]/3",
+            diagnostic_category::undefined
+        }
+    },
+    {
+        diagnostic_id::pp_phase3_undef_char_in_hdr_name_angle,
+        {
+            "if the characters ', \\, \", //, or /* occur in the"
+            " sequence between the < and > delimiters, the behavior"
+            " is undefined",
+            "[6.4.7]/3",
+            diagnostic_category::undefined
+        }
+    },
+    {
+        diagnostic_id::pp_phase3_partial_block_comment,
+        {
+            "a source file shall not end in a partial comment",
+            "[5.1.1.2]/1.3",
+            diagnostic_category::error
+        }
+    },
 };
 
 const diagnostic& find_diagnostic(diagnostic_id diag_id) {
@@ -90,6 +117,7 @@ color get_category_color(diagnostic_category cat) {
     switch (cat) {
         case diagnostic_category::error: return color::red;
         case diagnostic_category::warning: return color::yellow;
+        case diagnostic_category::undefined: return color::magenta;
     }
 }
 

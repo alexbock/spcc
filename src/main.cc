@@ -3,6 +3,10 @@
 #include "test.hh"
 #include "diagnostic.hh"
 
+#include "pp.hh"
+#include "buffer.hh"
+#include "pp_token.hh"
+
 #include <cstdlib>
 #include <iostream>
 
@@ -24,6 +28,6 @@ int main(int argc, char** argv) {
     } else if (program_options.files.empty()) {
         diagnose(diagnostic_id::no_input_files, {});
     } else {
-        // TODO run
+
     }
 }

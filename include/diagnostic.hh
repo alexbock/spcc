@@ -10,12 +10,16 @@ enum class diagnostic_id {
     pp_phase1_invalid_utf8,
     pp_phase2_missing_newline,
     opt_unrecognized,
-    no_input_files
+    no_input_files,
+    pp_phase3_undef_char_in_hdr_name_quote,
+    pp_phase3_undef_char_in_hdr_name_angle,
+    pp_phase3_partial_block_comment
 };
 
 enum class diagnostic_category {
     error,
-    warning
+    warning,
+    undefined
 };
 
 struct diagnostic {

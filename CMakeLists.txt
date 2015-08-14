@@ -13,6 +13,9 @@ set(SOURCE
     src/platform.cc
     src/pp_phase1.cc
     src/pp_phase2.cc
+    src/pp_phase3.cc
+    src/pp_token.cc
+    src/punctuator.cc
     src/test.cc
     src/translator.cc
     src/utf8.cc
@@ -26,6 +29,8 @@ set(INCLUDE
     include/options.hh
     include/platform.hh
     include/pp.hh
+    include/pp_token.hh
+    include/punctuator.hh
     include/test.hh
     include/translator.hh
     include/utf8.hh
