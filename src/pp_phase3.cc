@@ -283,8 +283,17 @@ std::vector<pp_token> perform_pp_phase3(buffer& src) {
                   sort_pp_tokens);
         assert(tentative_lexes.size() > 1);
         if (tentative_lexes[0].spelling.empty()) {
-            // TODO other non-whitespace
-            assert("!TODO");
+            std::pair<location, location> range{
+                { src, index }, { src, index + 1 }
+            };
+            pp_token tok{
+                src.data.substr(index, 1),
+                range,
+                pp_token::other_non_whitespace{}
+            };
+            tokens.push_back(std::move(tok));
+            ++index;
+            continue;
         }
         auto& token = tentative_lexes[0];
         if (token.spelling.size() == tentative_lexes[1].spelling.size()) {
