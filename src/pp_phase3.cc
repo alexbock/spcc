@@ -3,7 +3,9 @@
 #include "buffer.hh"
 #include "punctuator.hh"
 #include "diagnostic.hh"
+#include "util.hh"
 
+#include <set>
 #include <cctype>
 #include <cassert>
 #include <utility>
@@ -159,6 +161,113 @@ pp_token lex_punctuator(buffer& src, std::size_t index) {
     return pp_token{nullptr};
 }
 
+static std::set<std::string> simple_escape_sequences = {
+    "\\'", "\\\"", "\\?", "\\\\",
+    "\\a", "\\b", "\\f", "\\n", "\\r", "\\t", "\\v"
+};
+
+std::string lex_simple_escape(buffer& src, std::size_t index) {
+    auto it = simple_escape_sequences.find(src.data.substr(index, 2));
+    if (it != simple_escape_sequences.end()) return *it;
+    else return "";
+}
+
+static bool is_octal(char c) {
+    return c >= '0' && c <= '7';
+}
+
+std::string lex_octal_escape(buffer& src, std::size_t index) {
+    auto text = src.data.substr(index, 4);
+    if (text.size() < 2 || text[0] != '\\') return "";
+    if (!is_octal(text[1])) return "";
+    std::string result = "\\" + std::string{text[1]};
+    for (std::size_t i = 2; i < 4; ++i) {
+        if (!is_octal(text[i])) break;
+        result += text[i];
+    }
+    return result;
+}
+
+std::string lex_hex_escape(buffer& src, std::size_t index) {
+    if (src.data.substr(index, 2) != "\\x") return "";
+    std::size_t i = 2;
+    while (i < src.data.size() && std::isxdigit(src.data[i])) {
+        ++i;
+    }
+    if (i == 2) return "";
+    return src.data.substr(index, i);
+}
+
+std::string lex_escape(buffer& src, std::size_t index) {
+    auto simple = lex_simple_escape(src, index);
+    if (!simple.empty()) return simple;
+    auto octal = lex_octal_escape(src, index);
+    if (!octal.empty()) return octal;
+    auto hex = lex_hex_escape(src, index);
+    if (!hex.empty()) return hex;
+    auto ucn = lex_ucn(src, index);
+    if (!ucn.empty()) return ucn;
+    return "";
+}
+
+pp_token lex_character_constant(buffer& src, std::size_t index) {
+    // [6.4.4.4]/1
+    std::size_t prefix_offset = 0;
+    character_constant_prefix prefix = character_constant_prefix::none;
+    auto head = src.data.substr(index, 1);
+    if (head == "L") prefix = character_constant_prefix::L;
+    else if (head == "u") prefix = character_constant_prefix::u;
+    else if (head == "U") prefix = character_constant_prefix::U;
+    if (prefix != character_constant_prefix::none) {
+        prefix_offset = 1;
+    }
+    if (src.data.substr(index + prefix_offset, 1) != "'") {
+        return pp_token{nullptr};
+    }
+    assert(!"not yet implemented"); // TODO
+}
+
+pp_token lex_string_literal(buffer& src, std::size_t index) {
+    // [6.4.5]/1
+    string_literal_prefix prefix = string_literal_prefix::none;
+    auto head = src.data.substr(index, 2);
+    if (starts_with(head, "u8")) prefix = string_literal_prefix::u8;
+    else if (starts_with(head, "u")) prefix = string_literal_prefix::u;
+    else if (starts_with(head, "U")) prefix = string_literal_prefix::U;
+    else if (starts_with(head, "L")) prefix = string_literal_prefix::L;
+    std::size_t prefix_size = 0;
+    if (prefix == string_literal_prefix::u8) prefix_size = 2;
+    else if (prefix != string_literal_prefix::none) prefix_size = 1;
+    if (src.data.substr(index + prefix_size, 1) != "\"") {
+        return pp_token{nullptr};
+    }
+    std::size_t body_start = index + prefix_size + 1;
+    std::size_t i = 0;
+    for (;;) {
+        auto esc = lex_escape(src, body_start + i);
+        if (!esc.empty()) {
+            i += esc.size();
+            continue;
+        }
+        auto next = src.data.substr(body_start + i, 1);
+        if (next != "\"" && next != "\\" && next != "\n") {
+            ++i;
+            continue;
+        }
+        break;
+    }
+    if (src.data.substr(body_start + i, 1) != "\"") {
+        return pp_token{nullptr};
+    }
+    std::string body = src.data.substr(body_start, i);
+    std::pair<location, location> range{
+        { src, index }, { src, body_start + i + 1 }
+    };
+    pp_token::string_literal str{prefix, body};
+    std::string spelling = src.data.substr(index, body_start + i + 1 - index);
+    return pp_token(spelling, range, str);
+}
+
 std::size_t measure_comment(buffer& src, std::size_t index) {
     // [6.4.9]/1-2
     if (src.data.substr(index, 2) == "//") {
@@ -224,7 +333,9 @@ using lexer_func = pp_token (*)(buffer&, std::size_t);
 static lexer_func lexer_funcs[] = {
     lex_identifier,
     lex_pp_number,
-    lex_punctuator
+    lex_punctuator,
+    lex_character_constant,
+    lex_string_literal,
 };
 
 static bool allow_header_name(std::vector<pp_token>& tokens) {
@@ -232,10 +343,10 @@ static bool allow_header_name(std::vector<pp_token>& tokens) {
     header name preprocessing tokens are recognized only within
     #include preprocessing directives
     */
-    if (tokens.empty()) return false;
     bool found_include = false;
     bool found_hash = false;
-    for (std::size_t i = tokens.size() - 1; i > 0; --i) {
+    for (std::size_t j = 1; j <= tokens.size(); ++j) {
+        std::size_t i = tokens.size() - j;
         if (found_include) {
             if (tokens[i].kind == pp_token_kind::punctuator) {
                 auto punc = tokens[i].as<pp_token::punctuator>();
@@ -245,6 +356,7 @@ static bool allow_header_name(std::vector<pp_token>& tokens) {
                 }
             }
             if (tokens[i].kind != pp_token_kind::whitespace) break;
+            if (tokens[i].spelling == "\n") break;
         } else {
             if (tokens[i].kind == pp_token_kind::identifier) {
                 if (tokens[i].spelling == "include") {
@@ -253,6 +365,7 @@ static bool allow_header_name(std::vector<pp_token>& tokens) {
                 }
             }
             if (tokens[i].kind != pp_token_kind::whitespace) break;
+            if (tokens[i].spelling == "\n") break;
         }
     }
     return found_hash;
@@ -263,6 +376,10 @@ static bool sort_pp_tokens(const pp_token& a, const pp_token& b) {
 }
 
 std::vector<pp_token> perform_pp_phase3(buffer& src) {
+    /* [5.1.1.2]/1.3
+    The source file is decomposed into preprocessing tokens and
+    sequences of white-space characters (including comments).
+    */
     std::vector<pp_token> tokens;
     std::size_t index = 0;
     while (index < src.data.size()) {

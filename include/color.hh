@@ -5,7 +5,8 @@ enum class color {
     red,
     green,
     yellow,
-    magenta
+    magenta,
+    blue,
 };
 
 void set_color(color);

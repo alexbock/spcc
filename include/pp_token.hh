@@ -97,6 +97,9 @@ struct pp_token {
 
     struct string_literal : variant_base {
         static const auto token_kind = pp_token_kind::string_literal;
+        string_literal(string_literal_prefix prefix,
+                       std::string body) :
+        prefix{prefix}, body{std::move(body)} { }
         string_literal_prefix prefix;
         std::string body;
     };

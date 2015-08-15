@@ -26,6 +26,9 @@ void set_color(color c) {
         case color::magenta:
             std::cout << "\x1B[35m";
             break;
+        case color::blue:
+            std::cout << "\x1B[34m";
+            break;
     }
 #endif
 }

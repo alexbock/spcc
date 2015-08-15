@@ -80,6 +80,14 @@ static std::map<diagnostic_id, diagnostic> diags = {
             diagnostic_category::error
         }
     },
+    {
+        diagnostic_id::cannot_open_file,
+        {
+            "cannot open file '%%'",
+            {},
+            diagnostic_category::error
+        }
+    },
 };
 
 const diagnostic& find_diagnostic(diagnostic_id diag_id) {
