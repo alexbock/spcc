@@ -212,19 +212,44 @@ std::string lex_escape(buffer& src, std::size_t index) {
 
 pp_token lex_character_constant(buffer& src, std::size_t index) {
     // [6.4.4.4]/1
-    std::size_t prefix_offset = 0;
+    std::size_t prefix_size = 0;
     character_constant_prefix prefix = character_constant_prefix::none;
     auto head = src.data.substr(index, 1);
     if (head == "L") prefix = character_constant_prefix::L;
     else if (head == "u") prefix = character_constant_prefix::u;
     else if (head == "U") prefix = character_constant_prefix::U;
     if (prefix != character_constant_prefix::none) {
-        prefix_offset = 1;
+        prefix_size = 1;
     }
-    if (src.data.substr(index + prefix_offset, 1) != "'") {
+    if (src.data.substr(index + prefix_size, 1) != "'") {
         return pp_token{nullptr};
     }
-    assert(!"not yet implemented"); // TODO
+
+    std::size_t body_start = index + prefix_size + 1;
+    std::size_t i = 0;
+    for (;;) {
+        auto esc = lex_escape(src, body_start + i);
+        if (!esc.empty()) {
+            i += esc.size();
+            continue;
+        }
+        auto next = src.data.substr(body_start + i, 1);
+        if (next != "'" && next != "\\" && next != "\n") {
+            ++i;
+            continue;
+        }
+        break;
+    }
+    if (src.data.substr(body_start + i, 1) != "'") {
+        return pp_token{nullptr};
+    }
+    std::string body = src.data.substr(body_start, i);
+    std::pair<location, location> range{
+        { src, index }, { src, body_start + i + 1 }
+    };
+    pp_token::character_constant cc{prefix, body};
+    std::string spelling = src.data.substr(index, body_start + i + 1 - index);
+    return pp_token(spelling, range, cc);
 }
 
 pp_token lex_string_literal(buffer& src, std::size_t index) {
@@ -408,6 +433,10 @@ std::vector<pp_token> perform_pp_phase3(buffer& src) {
                 range,
                 pp_token::other_non_whitespace{}
             };
+            if (tok.spelling == "'" || tok.spelling == "\"") {
+                auto loc = range.first;
+                diagnose(diagnostic_id::pp_phase3_undef_stray_quote, loc);
+            }
             tokens.push_back(std::move(tok));
             ++index;
             continue;

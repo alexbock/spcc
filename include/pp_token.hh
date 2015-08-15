@@ -91,6 +91,9 @@ struct pp_token {
 
     struct character_constant : variant_base {
         static const auto token_kind = pp_token_kind::character_constant;
+        character_constant(character_constant_prefix prefix,
+                       std::string body) :
+        prefix{prefix}, body{std::move(body)} { }
         character_constant_prefix prefix;
         std::string body;
     };

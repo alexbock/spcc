@@ -16,6 +16,7 @@ enum class diagnostic_id {
     pp_phase3_partial_block_comment,
     pp_phase3_ambiguous_parse,
     cannot_open_file,
+    pp_phase3_undef_stray_quote,
 };
 
 enum class diagnostic_category {

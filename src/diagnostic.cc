@@ -88,6 +88,16 @@ static std::map<diagnostic_id, diagnostic> diags = {
             diagnostic_category::error
         }
     },
+    {
+        diagnostic_id::pp_phase3_undef_stray_quote,
+        {
+            "if a ' or a \" character does not lexically"
+            " match a preprocessing token,"
+            " the behavior is undefined",
+            "[6.4]/3",
+            diagnostic_category::undefined
+        }
+    },
 };
 
 const diagnostic& find_diagnostic(diagnostic_id diag_id) {
