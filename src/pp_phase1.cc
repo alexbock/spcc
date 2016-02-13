@@ -44,7 +44,7 @@ buffer perform_pp_phase1(buffer& src) {
             diagnose(diagnostic_id::pp_phase1_invalid_utf8,
                      loc,
                      error.what());
-            t.replace(1, "�");
+            t.replace(1, "\\u001A"); // U+001A "SUBSTITUTE"
         }
         // introduce new-line characters for end-of-line indicators
         if (t.peek(2) == "\r\n") {
