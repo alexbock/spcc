@@ -89,13 +89,6 @@ pp_token lex_identifier(buffer& src, std::size_t index) {
     return pp_token{name, range, pp_token::identifier{}};
 }
 
-std::string lex_dot_or_digit(buffer& src, std::size_t index) {
-    auto digit = lex_digit(src, index);
-    if (!digit.empty()) return digit;
-    if (src.data.substr(index, 1) == ".") return ".";
-    return "";
-}
-
 std::string lex_pp_number_exp(buffer& src, std::size_t index) {
     auto sub = src.data.substr(index, 2);
     if (sub.size() != 2) return "";
@@ -120,14 +113,13 @@ pp_token lex_pp_number(buffer& src, std::size_t index) {
        pp-number P sign
        pp-number .
     */
-    auto spelling = lex_dot_or_digit(src, index);
-    if (spelling.empty()) return pp_token{nullptr};
+    std::string spelling;
+    if (src.data.substr(index, 1) == ".") {
+        spelling += ".";
+    }
+    auto digit = lex_digit(src, index + spelling.size());
+    if (digit.empty()) return pp_token{nullptr};
     for (;;) {
-        auto dot_digit = lex_dot_or_digit(src, index + spelling.size());
-        if (!dot_digit.empty()) {
-            spelling += dot_digit;
-            continue;
-        }
         auto exp = lex_pp_number_exp(src, index + spelling.size());
         if (!exp.empty()) {
             spelling += exp;
@@ -136,6 +128,15 @@ pp_token lex_pp_number(buffer& src, std::size_t index) {
         auto nondigit = lex_identifier_nondigit(src, index + spelling.size());
         if (!nondigit.empty()) {
             spelling += nondigit;
+            continue;
+        }
+        if (src.data.substr(index + spelling.size(), 1) == ".") {
+            spelling += ".";
+            continue;
+        }
+        auto digit = lex_digit(src, index + spelling.size());
+        if (!digit.empty()) {
+            spelling += digit;
             continue;
         }
         break;
