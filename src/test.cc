@@ -160,7 +160,7 @@ void run_pp_phase3_tests() {
 #include <cstdlib>
 
 int main() {
-    return (5 << 2) > (1 + 8);
+    return (5 << 2.1e+3) > (1 + 8);
 }
     )";
     buffer test1_0{"<test>", input1};
@@ -169,7 +169,7 @@ int main() {
     auto tokens1 = perform_pp_phase3(test1_2);
     const auto results1 = stringize_pp_tokens(tokens1);
     const auto expected1 = "@P@# @I@include @HN@<cstdlib> @I@int @I@main "
-    "@P@( @P@) @P@{ @I@return @P@( @#@5 @P@<< @#@2 @P@) @P@> @P@( @#@1 "
+    "@P@( @P@) @P@{ @I@return @P@( @#@5 @P@<< @#@2.1e+3 @P@) @P@> @P@( @#@1 "
     "@P@+ @#@8 @P@) @P@; @P@}";
     assert(results1 == expected1);
 }

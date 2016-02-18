@@ -93,8 +93,7 @@ std::string lex_pp_number_exp(buffer& src, std::size_t index) {
     auto sub = src.data.substr(index, 2);
     if (sub.size() != 2) return "";
     bool good = true;
-    good &= sub[0] == 'e' || sub[0] == 'E';
-    good &= sub[0] == 'p' || sub[0] == 'P';
+    good &= sub[0] == 'e' || sub[0] == 'E' || sub[0] == 'p' || sub[0] == 'P';
     good &= sub[1] == '+' || sub[1] == '-';
     if (good) return sub;
     return "";
