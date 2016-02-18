@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
         std::exit(EXIT_FAILURE);
     } else if (program_options.version_requested) {
         std::cerr << "spcc -- simple C compiler\n";
-        std::cerr << "copyright (c) 2015 Alexander Bock\n";
+        std::cerr << "copyright (c) 2016 Alexander Bock\n";
         std::cerr << "version: " PROGRAM_VERSION << "\n";
         std::cerr << "platform: " PLATFORM_NAME << "\n";
     } else if (program_options.help_requested) {
