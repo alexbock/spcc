@@ -2,6 +2,7 @@
 #include "platform.hh"
 #include "test.hh"
 #include "diagnostic.hh"
+#include "util.hh"
 
 #include "pp.hh"
 #include "buffer.hh"
@@ -34,6 +35,9 @@ int main(int argc, char** argv) {
         diagnose(diagnostic_id::no_input_files, {});
     } else {
         for (const auto& file : program_options.files) {
+            if (!ends_with(file, ".c")) {
+                diagnose(diagnostic_id::source_file_extension_not_c, {}, file);
+            }
             debug_file(file);
         }
     }

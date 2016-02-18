@@ -98,6 +98,14 @@ static std::map<diagnostic_id, diagnostic> diags = {
             diagnostic_category::undefined
         }
     },
+    {
+        diagnostic_id::source_file_extension_not_c,
+        {
+            "source file '%%' does not have a '.c' extension",
+            {},
+            diagnostic_category::warning
+        }
+    },
 };
 
 const diagnostic& find_diagnostic(diagnostic_id diag_id) {
