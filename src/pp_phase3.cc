@@ -369,28 +369,20 @@ static bool allow_header_name(std::vector<pp_token>& tokens) {
     #include preprocessing directives
     */
     bool found_include = false;
+    if (auto prev = peek(tokens, 0, true, false, true)) {
+        if (prev->kind == pp_token_kind::identifier) {
+            if (prev->spelling == "include") {
+                found_include = true;
+            }
+        }
+    }
+    if (!found_include) return false;
     bool found_hash = false;
-    for (std::size_t j = 1; j <= tokens.size(); ++j) {
-        std::size_t i = tokens.size() - j;
-        if (found_include) {
-            if (tokens[i].kind == pp_token_kind::punctuator) {
-                auto punc = tokens[i].as<pp_token::punctuator>();
-                if (punc.kind == punctuator_kind::hash) {
-                    found_hash = true;
-                    break;
-                }
+    if (auto prev = peek(tokens, 1, true, false, true)) {
+        if (auto punc = prev->maybe_as<pp_token::punctuator>()) {
+            if (punc->kind == punctuator_kind::hash) {
+                found_hash = true;
             }
-            if (tokens[i].kind != pp_token_kind::whitespace) break;
-            if (tokens[i].spelling == "\n") break;
-        } else {
-            if (tokens[i].kind == pp_token_kind::identifier) {
-                if (tokens[i].spelling == "include") {
-                    found_include = true;
-                    continue;
-                }
-            }
-            if (tokens[i].kind != pp_token_kind::whitespace) break;
-            if (tokens[i].spelling == "\n") break;
         }
     }
     return found_hash;

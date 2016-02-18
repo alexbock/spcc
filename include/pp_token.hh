@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <type_traits>
 #include <cassert>
+#include <vector>
 
 /* [6.4]/1
 preprocessing-token:
@@ -137,6 +138,8 @@ struct pp_token {
     pp_token& operator=(pp_token&&);
     template<typename T>
     T& as();
+    template<typename T>
+    T* maybe_as();
     ~pp_token();
     operator bool() const { return valid; }
 private:
@@ -163,3 +166,15 @@ T& pp_token::as() {
     assert(kind == T::token_kind);
     return reinterpret_cast<T&>(variant);
 }
+
+template<typename T>
+T* pp_token::maybe_as() {
+    if (kind == T::token_kind) return &as<T>();
+    else return nullptr;
+}
+
+pp_token* peek(std::vector<pp_token>& tokens,
+               std::size_t offset,
+               bool ignore_spaces = true,
+               bool ignore_newlines = true,
+               bool reverse = true);
