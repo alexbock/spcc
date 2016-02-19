@@ -24,6 +24,9 @@ pp_token lex_header_name(buffer& src, std::size_t index) {
         return pp_token{nullptr};
     }
     // TODO need a separate validation step for undefined chars
+    // (we also need to report on invalid UCNs in identifiers so
+    // a general mechanism to emit diagnostics from these tentative
+    // lexing functions would be good)
     std::string spelling = data.substr(index, end - index + 1);
     std::pair<location, location> range{{ src, index }, { src, end + 1 }};
     pp_token::header_name hn{filename, kind};
@@ -385,7 +388,9 @@ static bool allow_header_name(std::vector<pp_token>& tokens) {
             }
         }
     }
-    return found_hash;
+    if (!found_hash) return false;
+    auto newline = peek(tokens, 2, true, false, true);
+    return (!newline || newline->spelling == "\n");
 }
 
 static bool sort_pp_tokens(const pp_token& a, const pp_token& b) {
@@ -402,6 +407,7 @@ std::vector<pp_token> perform_pp_phase3(buffer& src) {
     while (index < src.data.size()) {
         if (auto ws = lex_whitespace(src, index)) {
             index += ws.spelling.size();
+            if (ws.spelling != "\n") ws.spelling = " ";
             tokens.push_back(std::move(ws));
             continue;
         }
