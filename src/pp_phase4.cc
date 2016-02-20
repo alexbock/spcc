@@ -1,10 +1,14 @@
 #include "pp.hh"
 #include "pp_token.hh"
 #include "diagnostic.hh"
+#include "buffer.hh"
 
 #include <algorithm>
 #include <string>
 #include <set>
+#include <fstream>
+#include <sstream>
+#include <map>
 
 using namespace lex_behavior;
 
@@ -22,12 +26,12 @@ public:
         return ::peek(tokens, offset, spaces, newlines,
                       false, nullptr, index);
     }
-    std::vector<pp_token*> eat_to_end_of_line() {
+    std::vector<pp_token*> eat_to_end_of_line(bool include_spaces = false) {
         std::vector<pp_token*> results;
         while (index < tokens.size()) {
             auto tok = next(INCLUDE, INCLUDE);
             if (tok->spelling == "\n") break;
-            if (tok->spelling != " ") results.push_back(tok);
+            if (tok->spelling != " " || include_spaces) results.push_back(tok);
         }
         return results;
     }
@@ -97,12 +101,33 @@ void handle_null_directive(lexer& lex) {
     (void)lex.eat_to_end_of_line();
 }
 
-void include_header(lexer& lex, pp_token::header_name* hn, location loc) {
-    // TODO
-    diagnose(diagnostic_id::pp_phase4_cannot_open_header, loc, hn->name);
+void include_header(lexer& lex, pp_token::header_name* hn, location loc,
+                    std::vector<buffer_ptr>& storage,
+                    std::vector<pp_token>& output) {
+    std::ifstream file{hn->name};
+    if (!file.good()) {
+        diagnose(diagnostic_id::pp_phase4_cannot_open_header, loc, hn->name);
+        return;
+    }
+    std::stringstream ss;
+    ss << file.rdbuf();
+    buffer_ptr buf = std::make_unique<buffer>(hn->name, ss.str());
+    buf->included_at = loc;
+    ss.str({});
+    auto p1 = perform_pp_phase1(*buf);
+    auto p2 = perform_pp_phase2(*p1);
+    auto p3 = perform_pp_phase3(*p2);
+    auto p4 = perform_pp_phase4(p3);
+    storage.push_back(std::move(buf));
+    storage.push_back(std::move(p1));
+    storage.push_back(std::move(p2));
+    output.insert(output.end(),
+                  std::make_move_iterator(p4.begin()),
+                  std::make_move_iterator(p4.end()));
 }
 
-void handle_include_directive(lexer& lex) {
+void handle_include_directive(lexer& lex, std::vector<buffer_ptr>& storage,
+                              std::vector<pp_token>& output) {
     auto include_token = lex.next(SKIP, STOP);
     auto loc = include_token->range.first;
     auto next = lex.peek(0, SKIP, STOP);
@@ -113,7 +138,7 @@ void handle_include_directive(lexer& lex) {
     }
     if (auto hn = next->maybe_as<pp_token::header_name>()) {
         lex.next(SKIP, STOP);
-        include_header(lex, hn, loc);
+        include_header(lex, hn, loc, storage, output);
         if (!lex.at_end_of_line()) {
             diagnose(diagnostic_id::pp_phase4_extra_tokens_after_header, loc);
         }
@@ -123,6 +148,139 @@ void handle_include_directive(lexer& lex) {
                  "macro expansion for include directives");
         (void)lex.eat_to_end_of_line();
     }
+}
+
+struct macro {
+    std::string name;
+    std::vector<pp_token*> body;
+    std::vector<std::string> parameter_names;
+    bool is_function_like = false;
+    bool is_variadic = false;
+};
+
+void handle_define_directive(lexer& lex,
+                             std::map<std::string, macro>& macros) {
+    auto define_token = lex.next(SKIP, STOP);
+    auto loc = define_token->range.first;
+    auto macro_name = lex.next(SKIP, STOP);
+    if (!macro_name || macro_name->kind != pp_token_kind::identifier) {
+        diagnose(diagnostic_id::pp_phase4_missing_macro_name, loc);
+        (void)lex.eat_to_end_of_line();
+        return;
+    }
+    macro m;
+    m.name = macro_name->spelling;
+    // handle the parameter list if this is a function-like macro
+    auto next = lex.peek(0, STOP, STOP);
+    if (next && is_specific_punctuator(next, punctuator_kind::paren_left)) {
+        m.is_function_like = true;
+        lex.next(STOP, STOP);
+        bool found_rparen = false;
+        bool another_parameter = false;
+        bool first_parameter = true;
+        while ((next = lex.next(SKIP, STOP))) {
+            if (is_specific_punctuator(next, punctuator_kind::paren_right)) {
+                if (another_parameter) {
+                    diagnose(diagnostic_id::pp_phase4_missing_flm_parameter,
+                             next->range.first);
+                    (void)lex.eat_to_end_of_line();
+                    return;
+                }
+                found_rparen = true;
+                break;
+            }
+            if (!another_parameter && !first_parameter) {
+                diagnose(diagnostic_id::pp_phase4_flm_expected_comma_or_paren,
+                         next->range.first);
+                (void)lex.eat_to_end_of_line();
+                return;
+            }
+            first_parameter = false;
+            another_parameter = false;
+
+            if (is_specific_punctuator(next, punctuator_kind::ellipsis)) {
+                m.is_variadic = true;
+            } else if (next->kind == pp_token_kind::identifier) {
+                m.parameter_names.push_back(next->spelling);
+            } else {
+                diagnose(diagnostic_id::pp_phase4_invalid_flm_param,
+                         next->range.first);
+                (void)lex.eat_to_end_of_line();
+                return;
+            }
+
+            next = lex.peek(0, SKIP, STOP);
+            if (next && is_specific_punctuator(next, punctuator_kind::comma)) {
+                if (m.is_variadic) {
+                    diagnose(diagnostic_id::pp_phase4_flm_comma_after_ellipsis,
+                             next->range.first);
+                    (void)lex.eat_to_end_of_line();
+                    return;
+                }
+                another_parameter = true;
+                lex.next(SKIP, STOP);
+            }
+        }
+        if (!found_rparen) {
+            diagnose(diagnostic_id::pp_phase4_missing_end_of_macro_param_list,
+                     loc);
+            (void)lex.eat_to_end_of_line();
+            return;
+        }
+    }
+    // capture the replacement list without leading or trailing whitespace
+    for (;;) {
+        auto next = lex.peek(0, INCLUDE, STOP);
+        if (next->spelling == " ") lex.next(INCLUDE, STOP);
+        else break;
+    }
+    m.body = lex.eat_to_end_of_line(true);
+    while (!m.body.empty() && m.body.back()->spelling == " ") {
+        m.body.pop_back();
+    }
+    // check if this is an invalid redefinition
+    auto it = macros.find(m.name);
+    if (it != macros.end()) {
+        /* [6.10.3]/2
+        An identifier currently defined as an object-like macro shall not
+        be redefined by another #define preprocessing directive unless the
+        second definition is an object-like macro definition and the two
+        replacement lists are identical. Likewise, an identifier currently
+        defined as a function-like macro shall not be redefined by another
+        #define preprocessing directive unless the second definition is a
+        function-like macro definition that has the same number and spelling
+        of parameters, and the two replacement lists are identical.
+        */
+        const auto& old = it->second;
+        bool invalid = false;
+        // both macros must be of the same type
+        invalid |= m.is_function_like != old.is_function_like;
+        // and have identical replacement lists
+        invalid |= m.body.size() != old.body.size();
+        if (!invalid) {
+            for (std::size_t i = 0; i < m.body.size(); ++i) {
+                invalid |= m.body[i]->spelling != old.body[i]->spelling;
+            }
+        }
+        // function-like macros must have identical parameter lists
+        invalid |= m.parameter_names.size() != old.parameter_names.size();
+        if (!invalid && m.is_function_like) {
+            for (std::size_t i = 0; i < m.parameter_names.size(); ++i) {
+                invalid |= m.parameter_names[i] != old.parameter_names[i];
+            }
+        }
+
+        if (invalid) {
+            auto id = diagnostic_id::pp_phase4_invalid_macro_redef_obj;
+            if (m.is_function_like) {
+                id = diagnostic_id::pp_phase4_invalid_macro_redef_func;
+            }
+            diagnose(id, loc);
+            return;
+        }
+    }
+
+    macros[m.name] = std::move(m);
 }
 
 std::vector<pp_token> perform_pp_phase4(std::vector<pp_token>& tokens) {
@@ -138,6 +296,8 @@ std::vector<pp_token> perform_pp_phase4(std::vector<pp_token>& tokens) {
     */
     lexer lex(tokens);
     std::vector<pp_token> output;
+    std::vector<buffer_ptr> storage;
+    std::map<std::string, macro> macros;
     while (auto tok = lex.next(SKIP, SKIP)) {
         if (is_specific_punctuator(tok, punctuator_kind::hash)) {
             auto next = lex.peek(0, SKIP, STOP);
@@ -148,7 +308,9 @@ std::vector<pp_token> perform_pp_phase4(std::vector<pp_token>& tokens) {
             } else if (next && is_specific_identifier(next, "line")) {
                 handle_line_directive(lex);
             } else if (next && is_specific_identifier(next, "include")) {
-                handle_include_directive(lex);
+                handle_include_directive(lex, storage, output);
+            } else if (next && is_specific_identifier(next, "define")) {
+                handle_define_directive(lex, macros);
             } else if (!next && lex.peek(0, SKIP, INCLUDE)) {
                 handle_null_directive(lex);
             } else {

@@ -25,12 +25,25 @@ enum class diagnostic_id {
     pp_phase4_expected_header_name,
     pp_phase4_extra_tokens_after_header,
     pp_phase4_cannot_open_header,
+    included_here,
+    pp_phase4_va_args_outside_vflm_rep_list,
+    pp_phase4_duplicate_macro_parameter,
+    pp_phase4_missing_macro_name,
+    pp_phase4_missing_end_of_macro_param_list,
+    pp_phase4_invalid_flm_param,
+    syntax_error,
+    pp_phase4_invalid_macro_redef_obj,
+    pp_phase4_invalid_macro_redef_func,
+    pp_phase4_flm_expected_comma_or_paren,
+    pp_phase4_flm_comma_after_ellipsis,
+    pp_phase4_missing_flm_parameter,
 };
 
 enum class diagnostic_category {
     error,
     warning,
-    undefined
+    undefined,
+    expansion,
 };
 
 struct diagnostic {

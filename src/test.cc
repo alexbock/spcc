@@ -84,14 +84,14 @@ void run_utf8_tests() {
 
 static std::string exec_pp_phase1(const std::string& in) {
     buffer a{"<test>", in};
-    buffer b = perform_pp_phase1(a);
-    return b.data;
+    buffer_ptr b = perform_pp_phase1(a);
+    return b->data;
 }
 
 static std::string exec_pp_phase2(const std::string& in) {
     buffer a{"<test>", in};
-    buffer b = perform_pp_phase2(a);
-    return b.data;
+    buffer_ptr b = perform_pp_phase2(a);
+    return b->data;
 }
 
 static std::string identify_pp_token_kind(pp_token_kind kind) {
@@ -164,9 +164,9 @@ int main() {
 }
     )";
     buffer test1_0{"<test>", input1};
-    buffer test1_1 = perform_pp_phase1(test1_0);
-    buffer test1_2 = perform_pp_phase2(test1_1);
-    auto tokens1 = perform_pp_phase3(test1_2);
+    buffer_ptr test1_1 = perform_pp_phase1(test1_0);
+    buffer_ptr test1_2 = perform_pp_phase2(*test1_1);
+    auto tokens1 = perform_pp_phase3(*test1_2);
     const auto results1 = stringize_pp_tokens(tokens1);
     const auto expected1 = "@P@# @I@include @HN@<cstdlib> @I@int @I@main "
     "@P@( @P@) @P@{ @I@return @P@( @#@5 @P@<< @#@2.1e+3 @P@) @P@> @P@( @#@1 "

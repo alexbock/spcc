@@ -18,8 +18,9 @@ std::map<std::string, std::string> trigraphs = {
     { R"(??-)", "~" }
 };
 
-buffer perform_pp_phase1(buffer& src) {
-    buffer dst{src.name + "#1", ""};
+buffer_ptr perform_pp_phase1(buffer& src) {
+    buffer_ptr dst_ptr = std::make_unique<buffer>(src.name + "#1", "");
+    auto& dst = *dst_ptr;
     dst.src = std::make_unique<translator>(src, dst);
     auto& t = *dst.src;
     /* [5.1.1.2]/1.1
@@ -61,5 +62,5 @@ buffer perform_pp_phase1(buffer& src) {
 
         t.propagate(1);
     }
-    return dst;
+    return dst_ptr;
 }

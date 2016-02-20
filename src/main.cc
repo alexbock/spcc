@@ -76,10 +76,10 @@ void debug_file(const std::string& filename) {
     ss.str({});
     debug_dump_buffer(buf);
     auto p1 = perform_pp_phase1(buf);
-    debug_dump_buffer(p1);
-    auto p2 = perform_pp_phase2(p1);
-    debug_dump_buffer(p2);
-    auto p3 = perform_pp_phase3(p2);
+    debug_dump_buffer(*p1);
+    auto p2 = perform_pp_phase2(*p1);
+    debug_dump_buffer(*p2);
+    auto p3 = perform_pp_phase3(*p2);
     debug_dump_tokens(p3);
     auto p4 = perform_pp_phase4(p3);
     debug_dump_tokens(p4);

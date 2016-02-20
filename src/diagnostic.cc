@@ -162,6 +162,107 @@ static std::map<diagnostic_id, diagnostic> diags = {
             diagnostic_category::error
         }
     },
+    {
+        diagnostic_id::included_here,
+        {
+            "included here",
+            {},
+            diagnostic_category::expansion
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_va_args_outside_vflm_rep_list,
+        {
+            "the identifier __VA_ARGS__ shall occur only in the "
+            "replacement list of a function-like macro that ends "
+            "its parameter list with an ellipsis",
+            "[6.10.3]/5",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_duplicate_macro_parameter,
+        {
+            "cannot reuse previous macro parameter name '%%'",
+            "[6.10.3]/6",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_missing_macro_name,
+        {
+            "define directive requires a macro name",
+            "[6.10.3]",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_missing_end_of_macro_param_list,
+        {
+            "function-like macro parameter list must be terminated "
+            "by a right parenthesis",
+            "[6.10.3]",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_invalid_flm_param,
+        {
+            "invalid token in macro parameter list",
+            "[6.10.3]",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::syntax_error,
+        {
+            "syntax error",
+            {},
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_invalid_macro_redef_obj,
+        {
+            "object-like macro previously defined differently",
+            "[6.10.3]/2",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_invalid_macro_redef_func,
+        {
+            "function-like macro previously defined differently",
+            "[6.10.3]/2",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_flm_expected_comma_or_paren,
+        {
+            "expected comma or right parenthesis in function-like "
+            "macro parameter list",
+            "[6.10.3]",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_flm_comma_after_ellipsis,
+        {
+            "ellipsis must come last in function-like macro "
+            "parameter list",
+            "[6.10.3]",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_missing_flm_parameter,
+        {
+            "expected macro parameter name or ellipsis after comma",
+            "[6.10.3]",
+            diagnostic_category::error
+        }
+    },
 };
 
 const diagnostic& find_diagnostic(diagnostic_id diag_id) {
@@ -201,6 +302,7 @@ std::string to_string(diagnostic_category category) {
         case diagnostic_category::error: return "error";
         case diagnostic_category::warning: return "warning";
         case diagnostic_category::undefined: return "undefined-behavior";
+        case diagnostic_category::expansion: return "note";
     }
 }
 
@@ -209,6 +311,7 @@ color get_category_color(diagnostic_category cat) {
         case diagnostic_category::error: return color::red;
         case diagnostic_category::warning: return color::yellow;
         case diagnostic_category::undefined: return color::magenta;
+        case diagnostic_category::expansion: return color::blue;
     }
 }
 
@@ -249,4 +352,8 @@ void emit_diagnostic(const diagnostic& diag,
     if (!diag.citation.empty()) std::cout << " " << diag.citation;
     std::cout << "\n";
     if (loc) emit_snippet_caret(loc);
+
+    if (loc && loc.buf->included_at) {
+        diagnose(diagnostic_id::included_here, loc.buf->included_at);
+    }
 }

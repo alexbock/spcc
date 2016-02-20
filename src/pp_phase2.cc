@@ -4,8 +4,9 @@
 #include "diagnostic.hh"
 #include "util.hh"
 
-buffer perform_pp_phase2(buffer& src) {
-    buffer dst{src.name + "#2", ""};
+buffer_ptr perform_pp_phase2(buffer& src) {
+    buffer_ptr dst_ptr = std::make_unique<buffer>(src.name + "#2", "");
+    auto& dst = *dst_ptr;
     dst.src = std::make_unique<translator>(src, dst);
     auto& t = *dst.src;
     /* [5.1.1.2]/1.2
@@ -39,5 +40,5 @@ buffer perform_pp_phase2(buffer& src) {
         diagnose(diagnostic_id::pp_phase2_missing_newline, loc);
         t.insert("\n");
     }
-    return dst;
+    return dst_ptr;
 }
