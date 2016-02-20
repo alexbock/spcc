@@ -18,6 +18,10 @@ enum class diagnostic_id {
     cannot_open_file,
     pp_phase3_undef_stray_quote,
     source_file_extension_not_c,
+    pp_phase4_error_directive,
+    pp_phase4_pragma_ignored,
+    pp_phase4_invalid_stdc_pragma,
+    not_yet_implemented
 };
 
 enum class diagnostic_category {

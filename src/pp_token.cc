@@ -28,15 +28,17 @@ pp_token* peek(std::vector<pp_token>& tokens,
                std::size_t offset,
                bool ignore_spaces,
                bool ignore_newlines,
-               bool reverse) {
-    if (offset >= tokens.size()) return nullptr;
+               bool reverse,
+               std::size_t* out_index,
+               std::size_t initial_skip) {
     std::size_t non_ignored_tokens_skipped = 0;
-    for (std::size_t i = 0; i < tokens.size(); ++i) {
+    for (std::size_t i = initial_skip; i < tokens.size(); ++i) {
         const auto j = maybe_reverse_index(i, tokens.size(), reverse);
         bool ignore = false;
         ignore |= (ignore_spaces && tokens[j].spelling == " ");
         ignore |= (ignore_newlines && tokens[j].spelling == "\n");
         if (!ignore && non_ignored_tokens_skipped++ == offset) {
+            if (out_index) *out_index = j + 1;
             return &tokens[j];
         }
     }

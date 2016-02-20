@@ -14,6 +14,7 @@ set(SOURCE
     src/pp_phase1.cc
     src/pp_phase2.cc
     src/pp_phase3.cc
+    src/pp_phase4.cc
     src/pp_token.cc
     src/punctuator.cc
     src/test.cc

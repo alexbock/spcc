@@ -106,6 +106,38 @@ static std::map<diagnostic_id, diagnostic> diags = {
             diagnostic_category::warning
         }
     },
+    {
+        diagnostic_id::pp_phase4_error_directive,
+        {
+            "error directive: '%%'",
+            "[6.10.5]",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_pragma_ignored,
+        {
+            "pragma directive '%%' ignored",
+            "[6.10.6]",
+            diagnostic_category::warning
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_invalid_stdc_pragma,
+        {
+            "invalid STDC pragma directive",
+            "[6.10.6]/2",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::not_yet_implemented,
+        {
+            "not yet implemented: %%",
+            {},
+            diagnostic_category::error
+        }
+    },
 };
 
 const diagnostic& find_diagnostic(diagnostic_id diag_id) {

@@ -81,4 +81,6 @@ void debug_file(const std::string& filename) {
     debug_dump_buffer(p2);
     auto p3 = perform_pp_phase3(p2);
     debug_dump_tokens(p3);
+    auto p4 = perform_pp_phase4(p3);
+    debug_dump_tokens(p4);
 }

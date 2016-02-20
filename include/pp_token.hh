@@ -173,8 +173,16 @@ T* pp_token::maybe_as() {
     else return nullptr;
 }
 
+template<typename T>
+T* maybe_as(pp_token* token) {
+    if (token) return token->maybe_as<T>();
+    else return nullptr;
+}
+
 pp_token* peek(std::vector<pp_token>& tokens,
                std::size_t offset,
                bool ignore_spaces = true,
                bool ignore_newlines = true,
-               bool reverse = true);
+               bool reverse = true,
+               std::size_t* out_index = nullptr,
+               std::size_t initial_skip = 0);
