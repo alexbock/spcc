@@ -26,17 +26,22 @@ pp_token::~pp_token() {
 
 pp_token* peek(std::vector<pp_token>& tokens,
                std::size_t offset,
-               bool ignore_spaces,
-               bool ignore_newlines,
+               lex_behavior::mode spaces,
+               lex_behavior::mode newlines,
                bool reverse,
                std::size_t* out_index,
                std::size_t initial_skip) {
+    using namespace lex_behavior;
     std::size_t non_ignored_tokens_skipped = 0;
     for (std::size_t i = initial_skip; i < tokens.size(); ++i) {
         const auto j = maybe_reverse_index(i, tokens.size(), reverse);
         bool ignore = false;
-        ignore |= (ignore_spaces && tokens[j].spelling == " ");
-        ignore |= (ignore_newlines && tokens[j].spelling == "\n");
+        ignore |= (spaces == SKIP && tokens[j].spelling == " ");
+        ignore |= (newlines == SKIP && tokens[j].spelling == "\n");
+        bool stop = false;
+        stop |= (spaces == STOP && tokens[j].spelling == " ");
+        stop |= (newlines == STOP && tokens[j].spelling == "\n");
+        if (stop) return nullptr;
         if (!ignore && non_ignored_tokens_skipped++ == offset) {
             if (out_index) *out_index = j + 1;
             return &tokens[j];

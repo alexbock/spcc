@@ -179,10 +179,18 @@ T* maybe_as(pp_token* token) {
     else return nullptr;
 }
 
+namespace lex_behavior {
+    enum mode {
+        SKIP,
+        INCLUDE,
+        STOP
+    };
+}
+
 pp_token* peek(std::vector<pp_token>& tokens,
                std::size_t offset,
-               bool ignore_spaces = true,
-               bool ignore_newlines = true,
+               lex_behavior::mode spaces,
+               lex_behavior::mode newlines,
                bool reverse = true,
                std::size_t* out_index = nullptr,
                std::size_t initial_skip = 0);

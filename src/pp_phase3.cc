@@ -371,8 +371,9 @@ static bool allow_header_name(std::vector<pp_token>& tokens) {
     header name preprocessing tokens are recognized only within
     #include preprocessing directives
     */
+    using namespace lex_behavior;
     bool found_include = false;
-    if (auto prev = peek(tokens, 0, true, false, true)) {
+    if (auto prev = peek(tokens, 0, SKIP, STOP, true)) {
         if (prev->kind == pp_token_kind::identifier) {
             if (prev->spelling == "include") {
                 found_include = true;
@@ -381,7 +382,7 @@ static bool allow_header_name(std::vector<pp_token>& tokens) {
     }
     if (!found_include) return false;
     bool found_hash = false;
-    if (auto prev = peek(tokens, 1, true, false, true)) {
+    if (auto prev = peek(tokens, 1, SKIP, STOP, true)) {
         if (auto punc = prev->maybe_as<pp_token::punctuator>()) {
             if (punc->kind == punctuator_kind::hash) {
                 found_hash = true;
@@ -389,7 +390,7 @@ static bool allow_header_name(std::vector<pp_token>& tokens) {
         }
     }
     if (!found_hash) return false;
-    auto newline = peek(tokens, 2, true, false, true);
+    auto newline = peek(tokens, 2, SKIP, INCLUDE, true);
     return (!newline || newline->spelling == "\n");
 }
 
