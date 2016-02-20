@@ -271,11 +271,7 @@ void handle_define_directive(lexer& lex,
         }
 
         if (invalid) {
-            auto id = diagnostic_id::pp_phase4_invalid_macro_redef_obj;
-            if (m.is_function_like) {
-                id = diagnostic_id::pp_phase4_invalid_macro_redef_func;
-            }
-            diagnose(id, loc);
+            diagnose(diagnostic_id::pp_phase4_invalid_macro_redef, loc);
             return;
         }
     }

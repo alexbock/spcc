@@ -222,17 +222,9 @@ static std::map<diagnostic_id, diagnostic> diags = {
         }
     },
     {
-        diagnostic_id::pp_phase4_invalid_macro_redef_obj,
+        diagnostic_id::pp_phase4_invalid_macro_redef,
         {
-            "object-like macro previously defined differently",
-            "[6.10.3]/2",
-            diagnostic_category::error
-        }
-    },
-    {
-        diagnostic_id::pp_phase4_invalid_macro_redef_func,
-        {
-            "function-like macro previously defined differently",
+            "macro previously defined differently",
             "[6.10.3]/2",
             diagnostic_category::error
         }
