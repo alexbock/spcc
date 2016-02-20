@@ -36,6 +36,8 @@ enum class diagnostic_id {
     pp_phase4_flm_expected_comma_or_paren,
     pp_phase4_flm_comma_after_ellipsis,
     pp_phase4_missing_flm_parameter,
+    pp_phase4_undef_missing_ident,
+    pp_phase4_extra_after_undef,
 };
 
 enum class diagnostic_category {

@@ -255,6 +255,22 @@ static std::map<diagnostic_id, diagnostic> diags = {
             diagnostic_category::error
         }
     },
+    {
+        diagnostic_id::pp_phase4_undef_missing_ident,
+        {
+            "undef directive requires an identifier",
+            "[6.10.3.5]/2",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_extra_after_undef,
+        {
+            "extraneous tokens after undef directive",
+            "[6.10.3.5]/2",
+            diagnostic_category::error
+        }
+    },
 };
 
 const diagnostic& find_diagnostic(diagnostic_id diag_id) {

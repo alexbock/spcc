@@ -279,6 +279,24 @@ void handle_define_directive(lexer& lex,
     macros[m.name] = std::move(m);
 }
 
+void handle_undef_directive(lexer& lex, std::map<std::string, macro>& macros) {
+    auto undef_token = lex.next(SKIP, STOP);
+    auto loc = undef_token->range.first;
+    auto next = lex.next(SKIP, STOP);
+    if (!next || next->kind != pp_token_kind::identifier) {
+        diagnose(diagnostic_id::pp_phase4_undef_missing_ident, loc);
+        (void)lex.eat_to_end_of_line();
+        return;
+    }
+    macros.erase(next->spelling);
+    if (!lex.at_end_of_line()) {
+        diagnose(diagnostic_id::pp_phase4_extra_after_undef, loc);
+        (void)lex.eat_to_end_of_line();
+        return;
+    }
+    (void)lex.eat_to_end_of_line();
+}
+
 std::vector<pp_token> perform_pp_phase4(std::vector<pp_token>& tokens) {
     /* [5.1.1.2]/1.4
     Preprocessing directives are executed, macro invocations are
@@ -307,6 +325,8 @@ std::vector<pp_token> perform_pp_phase4(std::vector<pp_token>& tokens) {
                 handle_include_directive(lex, storage, output);
             } else if (next && is_specific_identifier(next, "define")) {
                 handle_define_directive(lex, macros);
+            } else if (next && is_specific_identifier(next, "undef")) {
+                handle_undef_directive(lex, macros);
             } else if (!next && lex.peek(0, SKIP, INCLUDE)) {
                 handle_null_directive(lex);
             } else {
