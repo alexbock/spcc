@@ -138,6 +138,30 @@ static std::map<diagnostic_id, diagnostic> diags = {
             diagnostic_category::error
         }
     },
+    {
+        diagnostic_id::pp_phase4_expected_header_name,
+        {
+            "expected a header name after include directive",
+            "[6.10.2]",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_extra_tokens_after_header,
+        {
+            "extraneous tokens after include directive",
+            "[6.10.2]",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_cannot_open_header,
+        {
+            "unable to open included file '%%'",
+            {},
+            diagnostic_category::error
+        }
+    },
 };
 
 const diagnostic& find_diagnostic(diagnostic_id diag_id) {

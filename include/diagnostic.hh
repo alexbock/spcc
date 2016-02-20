@@ -21,7 +21,10 @@ enum class diagnostic_id {
     pp_phase4_error_directive,
     pp_phase4_pragma_ignored,
     pp_phase4_invalid_stdc_pragma,
-    not_yet_implemented
+    not_yet_implemented,
+    pp_phase4_expected_header_name,
+    pp_phase4_extra_tokens_after_header,
+    pp_phase4_cannot_open_header,
 };
 
 enum class diagnostic_category {

@@ -17,7 +17,7 @@ pp_token lex_header_name(buffer& src, std::size_t index) {
     if (data.substr(index, 1) == "<") kind = header_name_kind::angle;
     else if (data.substr(index, 1) == "\"") kind = header_name_kind::quote;
     else return pp_token{nullptr};
-    auto end = data.find(kind == header_name_kind::quote ? '"' : '>', index);
+    auto end = data.find(kind == header_name_kind::quote ? '"' : '>', index + 1);
     if (end == std::string::npos) return pp_token{nullptr};
     std::string filename = data.substr(index + 1, end - (index + 1));
     if (filename.find('\n') != std::string::npos) {
@@ -419,9 +419,15 @@ std::vector<pp_token> perform_pp_phase3(buffer& src) {
         for (auto lexer : lexer_funcs) {
             tentative_lexes.push_back(lexer(src, index));
         }
-        std::sort(tentative_lexes.rbegin(),
-                  tentative_lexes.rend(),
-                  sort_pp_tokens);
+        /* [6.4]/4
+         If the input stream has been parsed into preprocessing tokens
+         up to a given character, the next preprocessing token is the
+         longest sequence of characters that could constitute a
+         preprocessing token.
+         */
+        std::stable_sort(tentative_lexes.rbegin(),
+                         tentative_lexes.rend(),
+                         sort_pp_tokens);
         assert(tentative_lexes.size() > 1);
         if (tentative_lexes[0].spelling.empty()) {
             std::pair<location, location> range{
@@ -441,10 +447,23 @@ std::vector<pp_token> perform_pp_phase3(buffer& src) {
             continue;
         }
         auto& token = tentative_lexes[0];
-        if (token.spelling.size() == tentative_lexes[1].spelling.size()) {
-            diagnose(diagnostic_id::pp_phase3_ambiguous_parse,
-                     { src, index },
-                     token.spelling);
+        auto& second = tentative_lexes[1];
+        if (token.spelling.size() == second.spelling.size()) {
+            /* [6.4]/4
+            There is one exception to this rule: header name preprocessing
+            tokens are recognized only within #include preprocessing
+            directives and in implementation-defined locations within
+            #pragma directives. In such contexts, a sequence of characters
+            that could be either a header name or a string literal is
+            recognized as the former.
+            */
+            bool header_name_won = token.kind == pp_token_kind::header_name;
+            bool string_second = second.kind == pp_token_kind::string_literal;
+            if (!(header_name_won && string_second)) {
+                diagnose(diagnostic_id::pp_phase3_ambiguous_parse,
+                         { src, index },
+                         token.spelling);
+            }
         }
         index += token.spelling.size();
         tokens.push_back(std::move(token));
