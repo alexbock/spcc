@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <stack>
 
 using namespace lex_behavior;
 
@@ -140,7 +141,8 @@ void handle_include_directive(lexer& lex, std::vector<buffer_ptr>& storage,
         lex.next(SKIP, STOP);
         include_header(lex, hn, loc, storage, output);
         if (!lex.at_end_of_line()) {
-            diagnose(diagnostic_id::pp_phase4_extra_tokens_after_header, loc);
+            diagnose(diagnostic_id::pp_phase4_extra_after_directive, loc,
+                     "include");
         }
         (void)lex.eat_to_end_of_line();
     } else {
@@ -231,7 +233,7 @@ void handle_define_directive(lexer& lex,
     // capture the replacement list without leading or trailing whitespace
     for (;;) {
         auto next = lex.peek(0, INCLUDE, STOP);
-        if (next->spelling == " ") lex.next(INCLUDE, STOP);
+        if (next && next->spelling == " ") lex.next(INCLUDE, STOP);
         else break;
     }
     m.body = lex.eat_to_end_of_line(true);
@@ -290,10 +292,93 @@ void handle_undef_directive(lexer& lex, std::map<std::string, macro>& macros) {
     }
     macros.erase(next->spelling);
     if (!lex.at_end_of_line()) {
-        diagnose(diagnostic_id::pp_phase4_extra_after_undef, loc);
+        diagnose(diagnostic_id::pp_phase4_extra_after_directive, loc, "undef");
         (void)lex.eat_to_end_of_line();
         return;
     }
+    (void)lex.eat_to_end_of_line();
+}
+
+bool is_active(const std::vector<bool>& activation) {
+    for (bool b : activation) if (!b) return false;
+    return true;
+}
+
+void handle_ifdef_directive(lexer& lex, std::map<std::string, macro>& macros,
+                            std::vector<bool>& activation) {
+    auto ifdef_token = lex.next(SKIP, STOP);
+    auto loc = ifdef_token->range.first;
+    auto next = lex.next(SKIP, STOP);
+    if (!next || next->kind != pp_token_kind::identifier) {
+        diagnose(diagnostic_id::pp_phase4_ifdef_missing_arg, loc);
+        (void)lex.eat_to_end_of_line();
+        return;
+    }
+
+    if (is_active(activation)) {
+        activation.push_back(macros.find(next->spelling) != macros.end());
+    } else {
+        activation.push_back(false);
+    }
+
+    if (!lex.at_end_of_line()) {
+        diagnose(diagnostic_id::pp_phase4_extra_after_directive, loc, "ifdef");
+        (void)lex.eat_to_end_of_line();
+        return;
+    }
+    (void)lex.eat_to_end_of_line();
+}
+
+void handle_ifndef_directive(lexer& lex, std::map<std::string, macro>& macros,
+                             std::vector<bool>& activation) {
+    auto ifndef_token = lex.next(SKIP, STOP);
+    auto loc = ifndef_token->range.first;
+    diagnose(diagnostic_id::not_yet_implemented, loc, "ifndef directives");
+    (void)lex.eat_to_end_of_line();
+    // TODO
+}
+
+void handle_else_directive(lexer& lex, std::vector<bool>& activation) {
+    auto else_token = lex.next(SKIP, STOP);
+    auto loc = else_token->range.first;
+    if (activation.empty()) {
+        diagnose(diagnostic_id::pp_phase4_invalid_non_directive, loc, "else");
+        (void)lex.eat_to_end_of_line();
+        return;
+    }
+    bool old = activation.back();
+    activation.pop_back();
+    if (is_active(activation)) {
+        activation.push_back(!old);
+    } else {
+        activation.push_back(false);
+    }
+    if (!lex.at_end_of_line()) {
+        diagnose(diagnostic_id::pp_phase4_extra_after_directive, loc, "else");
+        (void)lex.eat_to_end_of_line();
+        return;
+    }
+}
+
+void handle_endif_directive(lexer& lex, std::vector<bool>& activation) {
+    auto endif_token = lex.next(SKIP, STOP);
+    auto loc = endif_token->range.first;
+    if (activation.empty()) {
+        diagnose(diagnostic_id::pp_phase4_invalid_non_directive, loc, "endif");
+        (void)lex.eat_to_end_of_line();
+        return;
+    }
+    activation.pop_back();
+    if (!lex.at_end_of_line()) {
+        diagnose(diagnostic_id::pp_phase4_extra_after_directive, loc, "endif");
+        (void)lex.eat_to_end_of_line();
+        return;
+    }
+}
+
+void handle_non_directive(lexer& lex) {
+    auto token = lex.peek(0, SKIP, STOP);
+    diagnose(diagnostic_id::pp_phase4_non_directive, token->range.first);
     (void)lex.eat_to_end_of_line();
 }
 
@@ -312,9 +397,27 @@ std::vector<pp_token> perform_pp_phase4(std::vector<pp_token>& tokens) {
     std::vector<pp_token> output;
     std::vector<buffer_ptr> storage;
     std::map<std::string, macro> macros;
+    std::vector<bool> activation;
     while (auto tok = lex.next(SKIP, SKIP)) {
         if (is_specific_punctuator(tok, punctuator_kind::hash)) {
             auto next = lex.peek(0, SKIP, STOP);
+
+            if (!is_active(activation)) {
+                bool pass = false;
+                if (next) {
+                    pass |= is_specific_identifier(next, "if"); // TODO
+                    pass |= is_specific_identifier(next, "ifdef");
+                    pass |= is_specific_identifier(next, "ifndef");
+                    pass |= is_specific_identifier(next, "else");
+                    pass |= is_specific_identifier(next, "elif"); // TODO
+                    pass |= is_specific_identifier(next, "endif");
+                }
+                if (!pass) {
+                    (void)lex.eat_to_end_of_line();
+                    continue;
+                }
+            }
+
             if (next && is_specific_identifier(next, "error")) {
                 handle_error_directive(lex);
             } else if (next && is_specific_identifier(next, "pragma")) {
@@ -327,10 +430,18 @@ std::vector<pp_token> perform_pp_phase4(std::vector<pp_token>& tokens) {
                 handle_define_directive(lex, macros);
             } else if (next && is_specific_identifier(next, "undef")) {
                 handle_undef_directive(lex, macros);
+            } else if (next && is_specific_identifier(next, "ifdef")) {
+                handle_ifdef_directive(lex, macros, activation);
+            } else if (next && is_specific_identifier(next, "ifndef")) {
+                handle_ifndef_directive(lex, macros, activation);
+            } else if (next && is_specific_identifier(next, "else")) {
+                handle_else_directive(lex, activation);
+            } else if (next && is_specific_identifier(next, "endif")) {
+                handle_endif_directive(lex, activation);
+            } else if (next) {
+                handle_non_directive(lex);
             } else if (!next && lex.peek(0, SKIP, INCLUDE)) {
                 handle_null_directive(lex);
-            } else {
-                // TODO non-directive
             }
         }
     }

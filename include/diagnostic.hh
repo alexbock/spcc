@@ -23,7 +23,6 @@ enum class diagnostic_id {
     pp_phase4_invalid_stdc_pragma,
     not_yet_implemented,
     pp_phase4_expected_header_name,
-    pp_phase4_extra_tokens_after_header,
     pp_phase4_cannot_open_header,
     included_here,
     pp_phase4_va_args_outside_vflm_rep_list,
@@ -37,7 +36,10 @@ enum class diagnostic_id {
     pp_phase4_flm_comma_after_ellipsis,
     pp_phase4_missing_flm_parameter,
     pp_phase4_undef_missing_ident,
-    pp_phase4_extra_after_undef,
+    pp_phase4_invalid_non_directive,
+    pp_phase4_non_directive,
+    pp_phase4_ifdef_missing_arg,
+    pp_phase4_extra_after_directive,
 };
 
 enum class diagnostic_category {

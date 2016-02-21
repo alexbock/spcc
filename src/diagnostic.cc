@@ -147,14 +147,6 @@ static std::map<diagnostic_id, diagnostic> diags = {
         }
     },
     {
-        diagnostic_id::pp_phase4_extra_tokens_after_header,
-        {
-            "extraneous tokens after include directive",
-            "[6.10.2]",
-            diagnostic_category::error
-        }
-    },
-    {
         diagnostic_id::pp_phase4_cannot_open_header,
         {
             "unable to open included file '%%'",
@@ -264,10 +256,35 @@ static std::map<diagnostic_id, diagnostic> diags = {
         }
     },
     {
-        diagnostic_id::pp_phase4_extra_after_undef,
+        diagnostic_id::pp_phase4_invalid_non_directive,
         {
-            "extraneous tokens after undef directive",
-            "[6.10.3.5]/2",
+            "a non-directive shall not begin with a directive name "
+            "(%% directives do not exist in this context)",
+            "[6.10]/3",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_non_directive,
+        {
+            "non-directive ignored",
+            "[6.10]",
+            diagnostic_category::undefined
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_ifdef_missing_arg,
+        {
+            "ifdef directive requires an identifier",
+            "[6.10.1]/5",
+            diagnostic_category::error
+        }
+    },
+    {
+        diagnostic_id::pp_phase4_extra_after_directive,
+        {
+            "extraneous tokens after %% directive",
+            "[6.10]",
             diagnostic_category::error
         }
     },
