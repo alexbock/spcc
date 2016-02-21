@@ -40,6 +40,7 @@ enum class diagnostic_id {
     pp_phase4_non_directive,
     pp_phase4_ifdef_missing_arg,
     pp_phase4_extra_after_directive,
+    pp_phase4_obj_like_macro_needs_space,
 };
 
 enum class diagnostic_category {

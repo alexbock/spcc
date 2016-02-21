@@ -230,6 +230,14 @@ void handle_define_directive(lexer& lex,
             return;
         }
     }
+    // ensure there is a space before the replacement list if this is an
+    // object-like macro (6.10.3/3)
+    if (!m.is_function_like) {
+        next = lex.peek(0, INCLUDE, STOP);
+        if (next && next->spelling != " ") {
+            diagnose(diagnostic_id::pp_phase4_obj_like_macro_needs_space, loc);
+        }
+    }
     // capture the replacement list without leading or trailing whitespace
     for (;;) {
         auto next = lex.peek(0, INCLUDE, STOP);

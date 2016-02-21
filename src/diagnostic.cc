@@ -288,6 +288,15 @@ static std::map<diagnostic_id, diagnostic> diags = {
             diagnostic_category::error
         }
     },
+    {
+        diagnostic_id::pp_phase4_obj_like_macro_needs_space,
+        {
+            "there shall be whitespace between the identifier and the "
+            "replacement list in the definition of an object-like macro",
+            "[6.10.3]/3",
+            diagnostic_category::error
+        }
+    },
 };
 
 const diagnostic& find_diagnostic(diagnostic_id diag_id) {
