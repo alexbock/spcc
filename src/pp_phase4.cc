@@ -306,6 +306,11 @@ bool is_active(const std::vector<bool>& activation) {
 
 void handle_ifdef_directive(lexer& lex, std::map<std::string, macro>& macros,
                             std::vector<bool>& activation) {
+    if (!is_active(activation)) {
+        (void)lex.eat_to_end_of_line();
+        activation.push_back(false);
+        return;
+    }
     auto ifdef_token = lex.next(SKIP, STOP);
     auto loc = ifdef_token->range.first;
     auto next = lex.next(SKIP, STOP);
@@ -314,13 +319,7 @@ void handle_ifdef_directive(lexer& lex, std::map<std::string, macro>& macros,
         (void)lex.eat_to_end_of_line();
         return;
     }
-
-    if (is_active(activation)) {
-        activation.push_back(macros.find(next->spelling) != macros.end());
-    } else {
-        activation.push_back(false);
-    }
-
+    activation.push_back(macros.find(next->spelling) != macros.end());
     if (!lex.at_end_of_line()) {
         diagnose(diagnostic_id::pp_phase4_extra_after_directive, loc, "ifdef");
         (void)lex.eat_to_end_of_line();
@@ -348,11 +347,12 @@ void handle_else_directive(lexer& lex, std::vector<bool>& activation) {
     }
     bool old = activation.back();
     activation.pop_back();
-    if (is_active(activation)) {
-        activation.push_back(!old);
-    } else {
+    if (!is_active(activation)) {
         activation.push_back(false);
+        (void)lex.eat_to_end_of_line();
+        return;
     }
+    activation.push_back(!old);
     if (!lex.at_end_of_line()) {
         diagnose(diagnostic_id::pp_phase4_extra_after_directive, loc, "else");
         (void)lex.eat_to_end_of_line();
@@ -369,6 +369,10 @@ void handle_endif_directive(lexer& lex, std::vector<bool>& activation) {
         return;
     }
     activation.pop_back();
+    if (!is_active(activation)) {
+        (void)lex.eat_to_end_of_line();
+        return;
+    }
     if (!lex.at_end_of_line()) {
         diagnose(diagnostic_id::pp_phase4_extra_after_directive, loc, "endif");
         (void)lex.eat_to_end_of_line();
