@@ -6,7 +6,7 @@
 
 #include "pp.hh"
 #include "buffer.hh"
-#include "pp_token.hh"
+#include "token.hh"
 #include "color.hh"
 
 #include <cstdlib>
@@ -48,7 +48,7 @@ void debug_dump_buffer(buffer& buf) {
     std::cerr << buf.data << "@@@\n@@@\n";
 }
 
-void debug_dump_tokens(const std::vector<pp_token>& tokens) {
+void debug_dump_tokens(const std::vector<token>& tokens) {
     if (program_options.enable_color) {
         for (const auto& token : tokens) {
             set_color(color::blue);

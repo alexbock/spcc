@@ -34,7 +34,7 @@ buffer_ptr perform_pp_phase1(buffer& src) {
         // map physical source file multibyte characters to the
         // source character set
         if (!utf8::is_ascii(t.peek())) try {
-            std::string cp = t.peek(4);
+            string_view cp = t.peek(4);
             std::uint32_t utf32 = utf8::code_point_to_utf32(cp);
             std::string ucn = utf8::utf32_to_ucn(utf32);
             auto cp_length = utf8::measure_code_point(cp);
@@ -54,7 +54,7 @@ buffer_ptr perform_pp_phase1(buffer& src) {
         }
         // replace trigraph sequences with corresponding single-character
         // internal representations
-        auto trigraph = trigraphs.find(t.peek(3));
+        auto trigraph = trigraphs.find(t.peek(3).to_string());
         if (trigraph != trigraphs.end()) {
             t.replace(3, trigraph->second);
             continue;

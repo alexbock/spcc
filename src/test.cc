@@ -5,7 +5,7 @@
 #include "utf8.hh"
 #include "pp.hh"
 #include "color.hh"
-#include "pp_token.hh"
+#include "token.hh"
 
 #include <iostream>
 #include <cassert>
@@ -94,40 +94,40 @@ static std::string exec_pp_phase2(const std::string& in) {
     return b->data;
 }
 
-static std::string identify_pp_token_kind(pp_token_kind kind) {
+static std::string identify_token_kind(token_kind kind) {
     switch (kind) {
-        case pp_token_kind::pp_number:
+        case token_kind::pp_number:
             return "#";
-        case pp_token_kind::header_name:
+        case token_kind::header_name:
             return "HN";
-        case pp_token_kind::character_constant:
+        case token_kind::character_constant:
             return "CC";
-        case pp_token_kind::identifier:
+        case token_kind::identifier:
             return "I";
-        case pp_token_kind::other_non_whitespace:
+        case token_kind::other_non_whitespace:
             return "O";
-        case pp_token_kind::placemarker:
+        case token_kind::placemarker:
             return "MARK";
-        case pp_token_kind::punctuator:
+        case token_kind::punctuator:
             return "P";
-        case pp_token_kind::string_literal:
+        case token_kind::string_literal:
             return "SL";
-        case pp_token_kind::whitespace:
+        case token_kind::whitespace:
             return "WS";
     }
 }
 
-static std::string stringize_pp_tokens(const std::vector<pp_token>& tokens) {
+static std::string stringize_tokens(const std::vector<token>& tokens) {
     std::string result;
     std::string delim = "";
     for (const auto& token : tokens) {
-        if (token.kind == pp_token_kind::whitespace) continue;
+        if (token.kind == token_kind::whitespace) continue;
         result += delim;
         delim = " ";
         std::string next = "@";
-        next += identify_pp_token_kind(token.kind);
+        next += identify_token_kind(token.kind);
         next += "@";
-        next += token.spelling;
+        next += token.spelling.to_string();
         result += next;
     }
     return result;
@@ -167,7 +167,7 @@ int main() {
     buffer_ptr test1_1 = perform_pp_phase1(test1_0);
     buffer_ptr test1_2 = perform_pp_phase2(*test1_1);
     auto tokens1 = perform_pp_phase3(*test1_2);
-    const auto results1 = stringize_pp_tokens(tokens1);
+    const auto results1 = stringize_tokens(tokens1);
     const auto expected1 = "@P@# @I@include @HN@<cstdlib> @I@int @I@main "
     "@P@( @P@) @P@{ @I@return @P@( @#@5 @P@<< @#@2.1e+3 @P@) @P@> @P@( @#@1 "
     "@P@+ @#@8 @P@) @P@; @P@}";

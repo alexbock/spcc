@@ -42,14 +42,14 @@ namespace utf8 {
         return is_bit_set(c, CHAR_BIT - 1) && !is_bit_set(c, CHAR_BIT - 2);
     }
 
-    unsigned measure_code_point(const std::string& str) {
+    unsigned measure_code_point(string_view str) {
         assert(!str.empty());
         if (is_ascii(str[0])) return 1;
         else if (is_leader(str[0])) return count_set_high_bits(str[0]);
         else throw invalid_utf8_error("stray UTF-8 continuation byte");
     }
 
-    std::uint32_t code_point_to_utf32(const std::string& str) {
+    std::uint32_t code_point_to_utf32(string_view str) {
         assert(!str.empty());
         if (is_ascii(str[0])) return str[0];
         else if (is_leader(str[0])) {

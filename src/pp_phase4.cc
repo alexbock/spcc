@@ -1,5 +1,5 @@
 #include "pp.hh"
-#include "pp_token.hh"
+#include "token.hh"
 #include "diagnostic.hh"
 #include "buffer.hh"
 
@@ -15,20 +15,20 @@ using namespace lex_behavior;
 
 class lexer {
 public:
-    lexer(std::vector<pp_token>& tokens) : tokens(tokens) { }
-    pp_token* next(mode spaces, mode newlines) {
+    lexer(std::vector<token>& tokens) : tokens(tokens) { }
+    token* next(mode spaces, mode newlines) {
         std::size_t index_delta;
         auto tok = ::peek(tokens, 0, spaces, newlines,
                           false, &index_delta, index);
         if (tok) index = index_delta;
         return tok;
     }
-    pp_token* peek(std::size_t offset, mode spaces, mode newlines) {
+    token* peek(std::size_t offset, mode spaces, mode newlines) {
         return ::peek(tokens, offset, spaces, newlines,
                       false, nullptr, index);
     }
-    std::vector<pp_token*> eat_to_end_of_line(bool include_spaces = false) {
-        std::vector<pp_token*> results;
+    std::vector<token*> eat_to_end_of_line(bool include_spaces = false) {
+        std::vector<token*> results;
         while (index < tokens.size()) {
             auto tok = next(INCLUDE, INCLUDE);
             if (tok->spelling == "\n") break;
@@ -42,17 +42,16 @@ public:
         return !next || next->spelling == "\n";
     }
 private:
-    std::vector<pp_token>& tokens;
+    std::vector<token>& tokens;
     std::size_t index = 0;
 };
 
-bool is_specific_punctuator(pp_token* tok, punctuator_kind kind) {
-    auto punc = tok->maybe_as<pp_token::punctuator>();
-    return (punc && punc->kind == kind);
+bool is_specific_punctuator(token* tok, punctuator_kind kind) {
+    return tok->kind == token_kind::punctuator && tok->pk == kind;
 }
 
-bool is_specific_identifier(pp_token* tok, const std::string& spelling) {
-    return tok->kind == pp_token_kind::identifier && tok->spelling == spelling;
+bool is_specific_identifier(token* tok, const std::string& spelling) {
+    return tok->kind == token_kind::identifier && tok->spelling == spelling;
 }
 
 void handle_error_directive(lexer& lex) {
@@ -63,7 +62,7 @@ void handle_error_directive(lexer& lex) {
     for (auto token : tokens) {
         message += delim;
         delim = " ";
-        message += token->spelling;
+        message += token->spelling.to_string();
     }
     auto loc = error_token->range.first;
     diagnose(diagnostic_id::pp_phase4_error_directive, loc, message);
@@ -79,7 +78,8 @@ void handle_pragma_directive(lexer& lex) {
         static std::set<std::string> stdc_pragmas = {
             "FP_CONTRACT", "FENV_ACCESS", "CX_LIMITED_RANGE"
         };
-        if (next && stdc_pragmas.find(next->spelling) != stdc_pragmas.end()) {
+        if (next && stdc_pragmas.find(next->spelling.to_string()) !=
+        stdc_pragmas.end()) {
             diagnose(diagnostic_id::not_yet_implemented, loc, "STDC pragmas");
         } else {
             diagnose(diagnostic_id::pp_phase4_invalid_stdc_pragma, loc);
@@ -102,17 +102,17 @@ void handle_null_directive(lexer& lex) {
     (void)lex.eat_to_end_of_line();
 }
 
-void include_header(lexer& lex, pp_token::header_name* hn, location loc,
+void include_header(lexer& lex, token::header_name* hn, location loc,
                     std::vector<buffer_ptr>& storage,
-                    std::vector<pp_token>& output) {
-    std::ifstream file{hn->name};
+                    std::vector<token>& output) {
+    std::ifstream file{hn->name.to_string()};
     if (!file.good()) {
         diagnose(diagnostic_id::pp_phase4_cannot_open_header, loc, hn->name);
         return;
     }
     std::stringstream ss;
     ss << file.rdbuf();
-    buffer_ptr buf = std::make_unique<buffer>(hn->name, ss.str());
+    buffer_ptr buf = std::make_unique<buffer>(hn->name.to_string(), ss.str());
     buf->included_at = loc;
     ss.str({});
     auto p1 = perform_pp_phase1(*buf);
@@ -128,7 +128,7 @@ void include_header(lexer& lex, pp_token::header_name* hn, location loc,
 }
 
 void handle_include_directive(lexer& lex, std::vector<buffer_ptr>& storage,
-                              std::vector<pp_token>& output) {
+                              std::vector<token>& output) {
     auto include_token = lex.next(SKIP, STOP);
     auto loc = include_token->range.first;
     auto next = lex.peek(0, SKIP, STOP);
@@ -137,9 +137,9 @@ void handle_include_directive(lexer& lex, std::vector<buffer_ptr>& storage,
         (void)lex.eat_to_end_of_line();
         return;
     }
-    if (auto hn = next->maybe_as<pp_token::header_name>()) {
+    if (next->kind == token_kind::header_name) {
         lex.next(SKIP, STOP);
-        include_header(lex, hn, loc, storage, output);
+        include_header(lex, &next->hn, loc, storage, output);
         if (!lex.at_end_of_line()) {
             diagnose(diagnostic_id::pp_phase4_extra_after_directive, loc,
                      "include");
@@ -153,19 +153,19 @@ void handle_include_directive(lexer& lex, std::vector<buffer_ptr>& storage,
 }
 
 struct macro {
-    std::string name;
-    std::vector<pp_token*> body;
-    std::vector<std::string> parameter_names;
+    string_view name;
+    std::vector<token*> body;
+    std::vector<string_view> parameter_names;
     bool is_function_like = false;
     bool is_variadic = false;
 };
 
 void handle_define_directive(lexer& lex,
-                             std::map<std::string, macro>& macros) {
+                             std::map<string_view, macro>& macros) {
     auto define_token = lex.next(SKIP, STOP);
     auto loc = define_token->range.first;
     auto macro_name = lex.next(SKIP, STOP);
-    if (!macro_name || macro_name->kind != pp_token_kind::identifier) {
+    if (!macro_name || macro_name->kind != token_kind::identifier) {
         diagnose(diagnostic_id::pp_phase4_missing_macro_name, loc);
         (void)lex.eat_to_end_of_line();
         return;
@@ -202,7 +202,7 @@ void handle_define_directive(lexer& lex,
 
             if (is_specific_punctuator(next, punctuator_kind::ellipsis)) {
                 m.is_variadic = true;
-            } else if (next->kind == pp_token_kind::identifier) {
+            } else if (next->kind == token_kind::identifier) {
                 m.parameter_names.push_back(next->spelling);
             } else {
                 diagnose(diagnostic_id::pp_phase4_invalid_flm_param,
@@ -289,11 +289,11 @@ void handle_define_directive(lexer& lex,
     macros[m.name] = std::move(m);
 }
 
-void handle_undef_directive(lexer& lex, std::map<std::string, macro>& macros) {
+void handle_undef_directive(lexer& lex, std::map<string_view, macro>& macros) {
     auto undef_token = lex.next(SKIP, STOP);
     auto loc = undef_token->range.first;
     auto next = lex.next(SKIP, STOP);
-    if (!next || next->kind != pp_token_kind::identifier) {
+    if (!next || next->kind != token_kind::identifier) {
         diagnose(diagnostic_id::pp_phase4_undef_missing_ident, loc);
         (void)lex.eat_to_end_of_line();
         return;
@@ -312,7 +312,7 @@ bool is_active(const std::vector<bool>& activation) {
     return true;
 }
 
-void handle_ifdef_directive(lexer& lex, std::map<std::string, macro>& macros,
+void handle_ifdef_directive(lexer& lex, std::map<string_view, macro>& macros,
                             std::vector<bool>& activation) {
     if (!is_active(activation)) {
         (void)lex.eat_to_end_of_line();
@@ -322,7 +322,7 @@ void handle_ifdef_directive(lexer& lex, std::map<std::string, macro>& macros,
     auto ifdef_token = lex.next(SKIP, STOP);
     auto loc = ifdef_token->range.first;
     auto next = lex.next(SKIP, STOP);
-    if (!next || next->kind != pp_token_kind::identifier) {
+    if (!next || next->kind != token_kind::identifier) {
         diagnose(diagnostic_id::pp_phase4_ifdef_missing_arg, loc);
         (void)lex.eat_to_end_of_line();
         return;
@@ -336,7 +336,7 @@ void handle_ifdef_directive(lexer& lex, std::map<std::string, macro>& macros,
     (void)lex.eat_to_end_of_line();
 }
 
-void handle_ifndef_directive(lexer& lex, std::map<std::string, macro>& macros,
+void handle_ifndef_directive(lexer& lex, std::map<string_view, macro>& macros,
                              std::vector<bool>& activation) {
     auto ifndef_token = lex.next(SKIP, STOP);
     auto loc = ifndef_token->range.first;
@@ -394,7 +394,7 @@ void handle_non_directive(lexer& lex) {
     (void)lex.eat_to_end_of_line();
 }
 
-std::vector<pp_token> perform_pp_phase4(std::vector<pp_token>& tokens) {
+std::vector<token> perform_pp_phase4(std::vector<token>& tokens) {
     /* [5.1.1.2]/1.4
     Preprocessing directives are executed, macro invocations are
     expanded, and _Pragma unary operator expressions are executed.
@@ -406,9 +406,9 @@ std::vector<pp_token> perform_pp_phase4(std::vector<pp_token>& tokens) {
     are then deleted.
     */
     lexer lex(tokens);
-    std::vector<pp_token> output;
+    std::vector<token> output;
     std::vector<buffer_ptr> storage;
-    std::map<std::string, macro> macros;
+    std::map<string_view, macro> macros;
     std::vector<bool> activation;
     while (auto tok = lex.next(SKIP, SKIP)) {
         if (is_specific_punctuator(tok, punctuator_kind::hash)) {

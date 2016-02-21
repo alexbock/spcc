@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <experimental/string_view>
+
+using std::experimental::string_view;
 
 struct buffer;
 
@@ -19,7 +22,7 @@ public:
     void replace(std::size_t, std::string);
     std::size_t translate_dst_to_src(std::size_t dst_index);
     bool done() const;
-    std::string peek(std::size_t len) const;
+    string_view peek(std::size_t len) const;
     char peek() const;
 
     buffer* src;

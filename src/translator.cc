@@ -66,8 +66,8 @@ bool translator::done() const {
     return src_index == src->data.size();
 }
 
-std::string translator::peek(std::size_t len) const {
-    return src->data.substr(src_index, len);
+string_view translator::peek(std::size_t len) const {
+    return src->view().substr(src_index, len);
 }
 
 char translator::peek() const {

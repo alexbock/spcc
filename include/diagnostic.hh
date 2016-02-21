@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <experimental/string_view>
+
+using std::experimental::string_view;
 
 enum class diagnostic_id {
     pp_phase1_invalid_utf8,
@@ -66,6 +69,10 @@ inline std::string to_string(const char* c) {
 
 inline std::string to_string(const std::string& s) {
     return s;
+}
+
+inline std::string to_string(string_view v) {
+    return v.to_string();
 }
 
 template<typename... T>

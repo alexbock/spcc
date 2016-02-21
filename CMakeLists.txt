@@ -15,7 +15,7 @@ set(SOURCE
     src/pp_phase2.cc
     src/pp_phase3.cc
     src/pp_phase4.cc
-    src/pp_token.cc
+    src/token.cc
     src/punctuator.cc
     src/test.cc
     src/translator.cc
@@ -30,7 +30,7 @@ set(INCLUDE
     include/options.hh
     include/platform.hh
     include/pp.hh
-    include/pp_token.hh
+    include/token.hh
     include/punctuator.hh
     include/test.hh
     include/translator.hh
