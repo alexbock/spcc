@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <fstream>
+#include <sstream>
 
 using diagnostic::diagnose;
 
@@ -29,13 +31,17 @@ void show_version() {
 void process_input_files() {
     if (options::state.input_filenames.empty()) {
         diagnose(diagnostic::id::no_input_files, {});
-        options::state.exit_code = 1;
     }
-    for (const auto& file : options::state.input_filenames) {
-        (void)file; // TODO
+    for (const auto& filename : options::state.input_filenames) {
+        std::ifstream file{filename};
+        if (!file.good()) {
+            diagnose(diagnostic::id::cannot_open_file, {}, filename);
+            continue;
+        }
+        std::stringstream ss;
+        ss << file.rdbuf();
+        auto buffer = ss.str();
+        ss.clear();
+        // TODO
     }
-
-    raw_buffer rb{"foo.c", "int x = 5;"};
-    location loc{rb, 4};
-    diagnose(diagnostic::id::no_input_files, loc);
 }

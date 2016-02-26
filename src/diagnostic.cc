@@ -17,6 +17,14 @@ namespace diagnostic {
                 category::error
             }
         },
+        {
+            id::cannot_open_file,
+            {
+                "cannot open file '%%'",
+                {},
+                category::error
+            }
+        },
     };
 
     const info& find(id diag) {
