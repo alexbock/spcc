@@ -14,7 +14,8 @@ namespace meta {
         const char* begin() const { return str; }
         const char* end() const { return str + len; }
         char operator[](std::size_t i) const { return str[i]; }
-        string_view substr(std::size_t offset, std::size_t len) {
+        string_view substr(std::size_t offset, std::size_t len = -1) {
+            if (len == -1) len = this->len - offset;
             return { str + offset, this->len - len };
         }
         std::string to_string() { return { str, len }; }

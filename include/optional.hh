@@ -8,8 +8,11 @@ namespace meta {
     class optional {
     public:
         optional() : valid{false} { }
+        optional(const T& t) {
+            *this = t;
+        }
         optional(T&& t) {
-            *this = std::forward<T>(t);
+            *this = std::move<T>(t);
         }
         optional(const optional& other) {
             if (other.valid) *this = other.value();
@@ -24,6 +27,7 @@ namespace meta {
         optional& operator=(const optional& other) {
             if (!other.valid) valid = false;
             else *this = other.value();
+            return *this;
         }
         optional& operator=(optional&& other) {
             if (!other.valid) valid = false;
@@ -31,6 +35,7 @@ namespace meta {
                 other.valid = false;
                 *this = std::move(other.value());
             }
+            return *this;
         }
         optional& operator=(T&& t) {
             if (valid) {
@@ -41,6 +46,7 @@ namespace meta {
                 new (&data) T(std::forward<T>(t));
                 valid = true;
             }
+            return *this;
         }
         ~optional() {
             maybe_destroy();
