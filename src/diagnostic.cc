@@ -99,14 +99,18 @@ namespace diagnostic {
     }
 
     string_view compute_nth_line(string_view data, std::size_t line) {
-        std::size_t lno = 1;
+        std::size_t lno = 0;
+        std::size_t line_start = 0;
         std::size_t i;
         for (i = 0; lno < line; ++i) {
-            if (data[i] == '\n') ++lno;
+            if (data[i] == '\n') {
+                ++lno;
+                line_start = i + 1;
+            }
         }
         std::size_t j = i;
         while (data[j] != '\n' && j < data.size()) ++j;
-        return data.substr(i, j - i);
+        return data.substr(line_start, j - line_start);
     }
 
     void emit_snippet_caret(location loc) {

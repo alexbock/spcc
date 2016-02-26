@@ -32,6 +32,10 @@ void process_input_files() {
         options::state.exit_code = 1;
     }
     for (const auto& file : options::state.input_filenames) {
-        // TODO
+        (void)file; // TODO
     }
+
+    raw_buffer rb{"foo.c", "int x = 5;"};
+    location loc{rb, 4};
+    diagnose(diagnostic::id::no_input_files, loc);
 }

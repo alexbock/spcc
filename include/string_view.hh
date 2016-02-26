@@ -4,6 +4,7 @@
 #include <string>
 #include <cstddef>
 #include <cstring>
+#include <algorithm>
 
 namespace meta {
     class string_view {
@@ -19,7 +20,8 @@ namespace meta {
         char operator[](std::size_t i) const { return str[i]; }
         string_view substr(std::size_t offset, std::size_t len = -1) const {
             if (len == -1) len = this->len - offset;
-            return { str + offset, this->len - len };
+            len = std::min(this->len - offset, len);
+            return { str + offset, len };
         }
         std::string to_string() const { return { str, len }; }
         bool empty() const { return !len; }

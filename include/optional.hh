@@ -12,41 +12,52 @@ namespace meta {
     public:
         optional() : valid{false} { }
         optional(const T& t) {
-            *this = t;
+            operator=(t);
         }
         optional(T&& t) {
-            *this = std::move(t);
+            operator=(std::move(t));
         }
         optional(const optional& other) {
-            if (other.valid) *this = other.value();
+            if (other.valid) operator=(other.value());
             else valid = false;
         }
         optional(optional&& other) {
             if (other.valid) {
                 other.valid = false;
-                *this = std::move(other.value());
+                operator=(std::move(other.value()));
             } else valid = false;
         }
         optional& operator=(const optional& other) {
             if (!other.valid) valid = false;
-            else *this = other.value();
+            else operator=(other.value());
             return *this;
         }
         optional& operator=(optional&& other) {
             if (!other.valid) valid = false;
             else {
                 other.valid = false;
-                *this = std::move(other.value());
+                operator=(std::move(other.value()));
+            }
+            return *this;
+        }
+        optional& operator=(const T& t) {
+            if (valid) {
+                valid = false;
+                reinterpret_cast<T&>(data) = t;
+                valid = true;
+            } else {
+                new (&data) T(t);
+                valid = true;
             }
             return *this;
         }
         optional& operator=(T&& t) {
             if (valid) {
                 valid = false;
-                value() = std::forward<T>(t);
+                reinterpret_cast<T&>(data) = std::move(t);
                 valid = true;
             } else {
-                new (&data) T(std::forward<T>(t));
+                new (&data) T(std::move(t));
                 valid = true;
             }
             return *this;
@@ -72,7 +83,7 @@ namespace meta {
         void maybe_destroy() {
             if (valid) {
                 valid = false;
-                value().~T();
+                reinterpret_cast<T&>(data).~T();
             }
         }
 
