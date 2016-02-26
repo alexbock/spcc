@@ -1,4 +1,4 @@
-#include "system.hh"
+#include "platform.hh"
 #include "options.hh"
 
 #if defined(PLATFORM_WIN32)
@@ -7,16 +7,13 @@
 #include <unistd.h>
 #endif
 
-void system::stream::set_color(FILE* f, color c) {
+void platform::stream::set_color(FILE* f, color c) {
     if (!options::state.use_color) return;
     if (!is_terminal(f)) return;
 #if defined(PLATFORM_WIN32)
     // TODO
 #elif defined(PLATFORM_POSIX)
     switch (c) {
-        case color::standard:
-            std::fprintf(f, "\033[0m");
-            break;
         case color::red:
             std::fprintf(f, "\x1B[31m");
             break;
@@ -39,16 +36,13 @@ void system::stream::set_color(FILE* f, color c) {
 #endif
 }
 
-void system::stream::set_style(FILE* f, style s) {
+void platform::stream::set_style(FILE* f, style s) {
     if (!options::state.use_color) return;
     if (!is_terminal(f)) return;
 #if defined(PLATFORM_WIN32)
     // no styles on Windows
 #elif defined(PLATFORM_POSIX)
     switch (s) {
-        case style::standard:
-            std::fprintf(f, "\033[0m");
-            break;
         case style::bold:
             std::fprintf(f, "\x1B[1m");
             break;
@@ -56,7 +50,11 @@ void system::stream::set_style(FILE* f, style s) {
 #endif
 }
 
-bool system::stream::is_terminal(FILE* f) {
+void platform::stream::reset_attributes(FILE* f) {
+    std::fprintf(f, "\x1B[0m");
+}
+
+bool platform::stream::is_terminal(FILE* f) {
 #if defined(PLATFORM_WIN32)
     return _isatty(_fileno(f));
 #elif defined(PLATFORM_POSIX)

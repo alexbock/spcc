@@ -5,9 +5,10 @@ include_directories(
 )
 set(SOURCE
     src/buffer.cc
+    src/diagnostic.cc
     src/main.cc
     src/options.cc
-    src/system.cc
+    src/platform.cc
     src/utf8.cc
 )
 set(INCLUDE
@@ -16,7 +17,7 @@ set(INCLUDE
     include/optional.hh
     include/options.hh
     include/string_view.hh
-    include/system.hh
+    include/platform.hh
     include/utf8.hh
 )
 add_executable(spcc

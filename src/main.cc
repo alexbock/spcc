@@ -1,7 +1,10 @@
 #include "options.hh"
+#include "diagnostic.hh"
 
 #include <iostream>
 #include <cstdlib>
+
+using diagnostic::diagnose;
 
 static void show_help();
 static void show_version();
@@ -25,8 +28,7 @@ void show_version() {
 
 void process_input_files() {
     if (options::state.input_filenames.empty()) {
-        // TODO use diagnostic system
-        std::cerr << "error: no input files\n";
+        diagnose(diagnostic::id::no_input_files, {});
         options::state.exit_code = 1;
     }
     for (const auto& file : options::state.input_filenames) {

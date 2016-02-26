@@ -27,6 +27,11 @@ namespace meta {
         const char* str;
         std::size_t len;
     };
+
+    inline std::ostream& operator<<(std::ostream& stream, string_view str) {
+        stream << str.to_string();
+        return stream;
+    }
 }
 
 using meta::string_view;

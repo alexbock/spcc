@@ -11,10 +11,9 @@
 
 #include <cstdio>
 
-namespace system {
+namespace platform {
     namespace stream {
         enum class color {
-            standard,
             red,
             green,
             blue,
@@ -24,12 +23,12 @@ namespace system {
         };
 
         enum class style {
-            standard,
             bold,
         };
 
         void set_color(FILE*, color);
         void set_style(FILE*, style);
+        void reset_attributes(FILE*);
         bool is_terminal(FILE*);
     }
 }
