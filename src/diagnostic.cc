@@ -55,10 +55,12 @@ namespace diagnostic {
     }
 
     void emit_file_line_col(location loc) {
+        set_color(stdout, color::white);
         std::cout << loc.buffer().name() << ":";
         auto line_col = compute_line_col(loc);
         std::cout << line_col.first + 1 << ":";
         std::cout << line_col.second + 1 << ": ";
+        reset_attributes(stdout);
     }
 
     std::string to_string(category cat) {
