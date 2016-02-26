@@ -8,6 +8,7 @@ set(SOURCE
     src/main.cc
     src/options.cc
     src/system.cc
+    src/utf8.cc
 )
 set(INCLUDE
     include/buffer.hh
@@ -16,6 +17,7 @@ set(INCLUDE
     include/options.hh
     include/string_view.hh
     include/system.hh
+    include/utf8.hh
 )
 add_executable(spcc
     ${SOURCE}

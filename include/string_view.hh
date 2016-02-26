@@ -14,11 +14,12 @@ namespace meta {
         const char* begin() const { return str; }
         const char* end() const { return str + len; }
         char operator[](std::size_t i) const { return str[i]; }
-        string_view substr(std::size_t offset, std::size_t len = -1) {
+        string_view substr(std::size_t offset, std::size_t len = -1) const {
             if (len == -1) len = this->len - offset;
             return { str + offset, this->len - len };
         }
-        std::string to_string() { return { str, len }; }
+        std::string to_string() const { return { str, len }; }
+        bool empty() const { return !len; }
     private:
         const char* str;
         std::size_t len;

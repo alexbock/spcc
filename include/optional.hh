@@ -12,7 +12,7 @@ namespace meta {
             *this = t;
         }
         optional(T&& t) {
-            *this = std::move<T>(t);
+            *this = std::move(t);
         }
         optional(const optional& other) {
             if (other.valid) *this = other.value();
