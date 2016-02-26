@@ -1,3 +1,6 @@
+#ifndef SPCC_BUFFER_HH
+#define SPCC_BUFFER_HH
+
 #include "string_view.hh"
 #include "optional.hh"
 
@@ -65,3 +68,5 @@ namespace lex {
         std::vector<fragment> fragments_;
     };
 }
+
+#endif

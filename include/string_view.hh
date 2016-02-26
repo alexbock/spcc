@@ -1,3 +1,6 @@
+#ifndef SPCC_STRING_VIEW_HH
+#define SPCC_STRING_VIEW_HH
+
 #include <string>
 #include <cstddef>
 #include <cstring>
@@ -27,3 +30,5 @@ namespace meta {
 }
 
 using meta::string_view;
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef SPCC_SYSTEM_HH
+#define SPCC_SYSTEM_HH
+
 #if defined(_WIN32)
 #define PLATFORM_WIN32
 #elif defined(__unix__) || defined(__APPLE__)
@@ -30,3 +33,5 @@ namespace system {
         bool is_terminal(FILE*);
     }
 }
+
+#endif

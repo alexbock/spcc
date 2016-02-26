@@ -1,3 +1,6 @@
+#ifndef SPCC_OPTIONS_HH
+#define SPCC_OPTIONS_HH
+
 #include <vector>
 #include <string>
 
@@ -14,3 +17,5 @@ namespace options {
 
     void parse(int argc, char** argv);
 }
+
+#endif

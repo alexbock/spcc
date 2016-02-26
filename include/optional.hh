@@ -1,3 +1,6 @@
+#ifndef SPCC_OPTIONAL_HH
+#define SPCC_OPTIONAL_HH
+
 #include <type_traits>
 #include <utility>
 #include <cassert>
@@ -79,3 +82,5 @@ namespace meta {
 }
 
 using meta::optional;
+
+#endif
