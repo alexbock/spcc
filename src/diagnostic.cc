@@ -1,5 +1,6 @@
 #include "diagnostic.hh"
 #include "platform.hh"
+#include "options.hh"
 #include "utf8.hh"
 
 #include <map>
@@ -133,9 +134,19 @@ namespace diagnostic {
         std::cout << "\n";
     }
 
+    void update_exit_code(category cat) {
+        switch (cat) {
+            case category::error:
+                options::state.exit_code = 1;
+            default:
+                break;
+        }
+    }
+
     void emit_diagnostic(const info& info,
                          optional<location> loc,
                          const std::string& msg) {
+        update_exit_code(info.category);
         if (loc) loc = loc->find_spelling_loc();
         if (loc) emit_file_line_col(*loc);
         emit_category_message(info.category, msg);
