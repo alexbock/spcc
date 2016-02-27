@@ -229,9 +229,9 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
                 if (!ends_with(tok.spelling, "*/")) {
                     const auto loc = tok.range.first;
                     diagnose(diagnostic::id::pp3_incomplete_comment, loc);
+                    tok.kind = token::newline;
                 }
             }
-            tok.kind = token::newline;
         } else if (tok.is(token::header_name)) {
             /* [6.4.7]/3
              If the characters ', \, ", //, or / * occur in the sequence
@@ -258,3 +258,98 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
     return std::move(lexer.tokens);
 }
 
+using p4m = pp::phase_four_manager;
+
+optional<std::size_t> p4m::find(ws_mode space, ws_mode newline) {
+    for (std::size_t offset = index; offset < tokens.size(); ++offset) {
+        auto tok = tokens[offset];
+        if (tok.is(token::space) || tok.is(token::newline)) {
+            auto mode = tok.is(token::space) ? space : newline;
+            switch (mode) {
+                case SKIP: continue;
+                case STOP: return {};
+                case TAKE: return offset;
+            }
+        } else return offset;
+    }
+    return {};
+}
+
+optional<token> p4m::peek(ws_mode space, ws_mode newline) {
+    auto offset = find(space, newline);
+    if (offset) return tokens[*offset];
+    else return {};
+}
+
+optional<token> p4m::get(ws_mode space, ws_mode newline) {
+    auto offset = find(space, newline);
+    if (offset) {
+        index = *offset + 1;
+        return tokens[*offset];
+    } else return {};
+}
+
+std::vector<token> p4m::finish_line() {
+    std::vector<token> tokens;
+    for (auto tok = get(SKIP, STOP); tok; tok = get(SKIP, STOP)) {
+        tokens.push_back(*tok);
+    }
+    assert(get(SKIP, TAKE)->is(token::newline));
+    return tokens;
+}
+
+void p4m::handle_null_directive() {
+    assert(get(SKIP, TAKE)->is(token::newline));
+}
+
+
+void p4m::handle_error_directive() {
+    auto error_tok = *get(SKIP, STOP);
+    auto tokens = finish_line();
+    std::string msg;
+    std::string delim;
+    for (auto tok : tokens) {
+        msg += delim;
+        delim = " ";
+        msg += tok.spelling.to_string();
+    }
+    const auto loc = error_tok.range.first;
+    diagnose(diagnostic::id::pp4_error_directive, loc, msg);
+}
+
+void p4m::handle_pragma_directive() {
+    auto pragma_tok = *get(SKIP, STOP);
+    auto loc = pragma_tok.range.first;
+    auto next = get(SKIP, STOP);
+    if (next && next->spelling == "STDC") {
+        diagnostic::diagnose(diagnostic::id::not_yet_implemented, loc,
+                             "#pragma STDC");
+    } else {
+        diagnostic::diagnose(diagnostic::id::pp4_unknown_pragma, loc);
+    }
+    (void)finish_line();
+}
+
+std::vector<token> p4m::process() {
+    bool allow_directive = true;
+    while (index < tokens.size()) {
+        auto next = *get(SKIP, TAKE);
+        if (next.is(token::newline)) {
+            allow_directive = true;
+            continue;
+        } else if (next.is(punctuator::hash) && allow_directive) {
+            auto id = peek(SKIP, STOP);
+            if (!id) {
+                handle_null_directive();
+            } else if (id->spelling == "error") {
+                handle_error_directive();
+            } else if (id->spelling == "pragma") {
+                handle_pragma_directive();
+            }
+        } else {
+            allow_directive = false;
+            // TODO
+        }
+    }
+    return std::move(out);
+}

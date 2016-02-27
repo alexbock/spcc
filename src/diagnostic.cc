@@ -35,6 +35,14 @@ namespace diagnostic {
             }
         },
         {
+            id::not_yet_implemented,
+            {
+                "not yet implemented: %%",
+                {},
+                category::error
+            }
+        },
+        {
             id::pp1_invalid_utf8,
             {
                 "invalid UTF-8",
@@ -81,6 +89,22 @@ namespace diagnostic {
                 "use of %% in a header name",
                 "[6.4.7]/3",
                 category::undefined
+            }
+        },
+        {
+            id::pp4_error_directive,
+            {
+                "#error directive: %%",
+                "[6.10.5]",
+                category::error
+            }
+        },
+        {
+            id::pp4_unknown_pragma,
+            {
+                "unrecognized #pragma directive",
+                "[6.10.6]",
+                category::warning
             }
         },
     };

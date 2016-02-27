@@ -21,12 +21,15 @@ namespace diagnostic {
         no_input_files,
         cannot_open_file,
         input_file_not_dot_c,
+        not_yet_implemented,
         pp1_invalid_utf8,
         pp2_missing_newline,
         pp3_unmatched_quote,
         pp3_ambiguous_lex,
         pp3_incomplete_comment,
         pp3_undef_char_in_hdr_name,
+        pp4_error_directive,
+        pp4_unknown_pragma,
     };
 
     struct info {

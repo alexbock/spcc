@@ -24,7 +24,7 @@ namespace meta {
         optional(optional&& other) {
             if (other.valid) {
                 other.valid = false;
-                operator=(std::move(other.value()));
+                operator=(std::move(reinterpret_cast<T&>(other.data)));
             } else valid = false;
         }
         optional& operator=(const optional& other) {
@@ -36,7 +36,7 @@ namespace meta {
             if (!other.valid) valid = false;
             else {
                 other.valid = false;
-                operator=(std::move(other.value()));
+                operator=(std::move(reinterpret_cast<T&>(other.data)));
             }
             return *this;
         }

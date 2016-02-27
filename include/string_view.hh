@@ -40,6 +40,11 @@ namespace meta {
         if (a.size() != b.size()) return false;
         return !std::strncmp(a.begin(), b.begin(), a.size());
     }
+
+    inline bool operator<(string_view a, string_view b) {
+        return std::lexicographical_compare(a.begin(), a.end(),
+                                            b.begin(), b.end());
+    }
 }
 
 using meta::string_view;

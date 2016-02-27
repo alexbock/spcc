@@ -3,9 +3,12 @@
 
 #include "buffer.hh"
 #include "token.hh"
+#include "optional.hh"
 
 #include <memory>
 #include <regex>
+#include <utility>
+#include <map>
 
 namespace pp {
     std::unique_ptr<buffer> perform_phase_one(std::unique_ptr<buffer> in);
@@ -38,6 +41,43 @@ namespace pp {
 
         const buffer& buf;
         std::size_t index_ = 0;
+    };
+
+    struct macro {
+        string_view name;
+        std::vector<token> body;
+        bool function_like = false;
+        bool variadic = false;
+    };
+
+    class phase_four_manager {
+    public:
+        phase_four_manager(std::unique_ptr<buffer> buf,
+                           std::vector<token> tokens) :
+        buf(std::move(buf)), tokens(std::move(tokens)) { }
+
+        std::vector<token> process();
+    private:
+        enum ws_mode {
+            SKIP,
+            STOP,
+            TAKE,
+        };
+
+        optional<std::size_t> find(ws_mode space, ws_mode newline);
+        optional<token> peek(ws_mode space, ws_mode newline);
+        optional<token> get(ws_mode space, ws_mode newline);
+        std::vector<token> finish_line();
+
+        void handle_null_directive();
+        void handle_error_directive();
+        void handle_pragma_directive();
+
+        std::unique_ptr<buffer> buf;
+        std::vector<token> tokens;
+        std::vector<token> out;
+        std::map<string_view, macro> macros;
+        std::size_t index = 0;
     };
 }
 

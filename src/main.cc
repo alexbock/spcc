@@ -71,5 +71,7 @@ void process_input_files() {
             std::cout << tok.spelling;
         }
         std::cout << "@@@\n";
+        pp::phase_four_manager p4m(std::move(post_p2), std::move(tokens));
+        tokens = p4m.process();
     }
 }
