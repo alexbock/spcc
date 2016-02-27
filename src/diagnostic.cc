@@ -27,6 +27,14 @@ namespace diagnostic {
             }
         },
         {
+            id::input_file_not_dot_c,
+            {
+                "input file '%%' does not have a '.c' extension",
+                {},
+                category::warning
+            }
+        },
+        {
             id::pp1_invalid_utf8,
             {
                 "invalid UTF-8",

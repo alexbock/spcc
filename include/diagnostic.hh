@@ -20,6 +20,7 @@ namespace diagnostic {
     enum class id {
         no_input_files,
         cannot_open_file,
+        input_file_not_dot_c,
         pp1_invalid_utf8,
         pp2_missing_newline,
         pp3_unmatched_quote,

@@ -3,6 +3,7 @@
 #include "buffer.hh"
 #include "pp.hh"
 #include "test.hh"
+#include "util.hh"
 #include "platform.hh"
 
 #include <iostream>
@@ -39,6 +40,9 @@ void process_input_files() {
         diagnose(diagnostic::id::no_input_files, {});
     }
     for (const auto& filename : options::state.input_filenames) {
+        if (!util::ends_with(filename, ".c")) {
+            diagnose(diagnostic::id::input_file_not_dot_c, {}, filename);
+        }
         std::ifstream file{filename};
         if (!file.good()) {
             diagnose(diagnostic::id::cannot_open_file, {}, filename);
