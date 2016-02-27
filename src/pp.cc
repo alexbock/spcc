@@ -4,6 +4,7 @@
 #include "util.hh"
 #include "optional.hh"
 
+#include <algorithm>
 #include <cassert>
 #include <map>
 
@@ -380,7 +381,61 @@ void p4m::handle_define_directive() {
     }
     macro mac{name->spelling, name->range.first};
     if (peek(STOP, STOP) && peek(STOP, STOP)->is(punctuator::paren_left)) {
-        // TODO
+        (void)get(STOP, STOP);
+        // parse the parameter list
+        bool allow_comma = false; // after a parameter other than ellipsis
+        bool allow_param = true; // at the beginning or after a comma
+        bool require_param = false; // after a comma
+        bool done = false; // exited due to a right paren
+        for (auto tok = get(SKIP, STOP); tok; tok = get(SKIP, STOP)) {
+            if (tok->is(token::identifier) && allow_param) {
+                mac.param_names.push_back(tok->spelling);
+                allow_comma = true;
+                allow_param = false;
+                require_param = false;
+            } else if (tok->is(punctuator::ellipsis) && allow_param) {
+                mac.variadic = true;
+                allow_comma = false;
+                allow_param = false;
+                require_param = false;
+            } else if (tok->is(punctuator::comma) && allow_comma) {
+                allow_comma = false;
+                allow_param = true;
+                require_param = true;
+            } else if (tok->is(punctuator::paren_right) && !require_param) {
+                done = true;
+                break;
+            } else {
+                diagnose(diagnostic::id::pp4_unexpected_macro_param,
+                         tok->range.first);
+                (void)finish_line();
+                return;
+            }
+        }
+        if (!done) {
+            diagnose(diagnostic::id::pp4_missing_macro_right_paren, loc);
+            (void)finish_line();
+            return;
+        }
+        // check for duplicate parameter names
+        auto params = mac.param_names;
+        std::stable_sort(params.begin(), params.end());
+        auto it = std::adjacent_find(params.begin(), params.end());
+        if (it != params.end()) {
+            auto it2 = it + 1;
+            location loc2(*buf, it2->begin() - buf->data().begin());
+            diagnose(diagnostic::id::pp4_duplicate_macro_param, loc2, *it2);
+            location loc1(*buf, it->begin() - buf->data().begin());
+            diagnose(diagnostic::id::aux_previous_use, loc1);
+            (void)finish_line();
+            return;
+        }
+    }
+    if (!mac.function_like) {
+        if (auto tok = peek(STOP, STOP)) {
+            const auto loc = tok->range.first;
+            diagnose(diagnostic::id::pp4_missing_macro_space, loc);
+        }
     }
     mac.body = finish_line();
     maybe_diagnose_macro_redefinition(mac);

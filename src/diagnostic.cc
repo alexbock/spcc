@@ -132,9 +132,50 @@ namespace diagnostic {
             }
         },
         {
+            id::pp4_duplicate_macro_param,
+            {
+                "duplicate macro parameter name '%%'",
+                "[6.10.3]/6",
+                category::error
+            }
+        },
+        {
+            id::pp4_unexpected_macro_param,
+            {
+                "unexpected token in function-like macro parameter list",
+                "[6.10.3]",
+                category::error
+            }
+        },
+        {
+            id::pp4_missing_macro_space,
+            {
+                "missing whitespace before replacement list",
+                "[6.10.3]/3",
+                category::error
+            }
+        },
+        {
+            id::pp4_missing_macro_right_paren,
+            {
+                "expected right parenthesis to terminate function-like "
+                "macro parameter list",
+                "[6.10.3]",
+                category::error
+            }
+        },
+        {
             id::aux_previous_def,
             {
                 "previous definition is here",
+                {},
+                category::auxiliary
+            }
+        },
+        {
+            id::aux_previous_use,
+            {
+                "previous use is here",
                 {},
                 category::auxiliary
             }

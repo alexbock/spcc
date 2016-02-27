@@ -33,7 +33,12 @@ namespace diagnostic {
         pp4_expected_macro_name,
         pp4_extra_after_directive,
         pp4_macro_redef,
+        pp4_duplicate_macro_param,
+        pp4_unexpected_macro_param,
+        pp4_missing_macro_space,
+        pp4_missing_macro_right_paren,
         aux_previous_def,
+        aux_previous_use,
     };
 
     struct info {
