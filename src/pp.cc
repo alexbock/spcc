@@ -168,6 +168,10 @@ static std::map<token_kind, const std::regex*> pp_token_patterns = {
     { token::newline, &pp::regex::newline },
 };
 
+static std::vector<std::string> header_name_undef_seqs = {
+    "'", "\"", "\\", "//", "/*"
+};
+
 std::vector<token> pp::perform_phase_three(const buffer& in) {
     lexer lexer{in};
     while (!lexer.done()) {
@@ -214,6 +218,7 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
             }
         }
 
+        // clean up and diagnose chosen token
         auto tok = lexes[0];
         if (tok.is(token::punctuator)) {
             auto it = punctuator_table.find(tok.spelling.to_string());
@@ -227,6 +232,25 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
                 }
             }
             tok.kind = token::newline;
+        } else if (tok.is(token::header_name)) {
+            /* [6.4.7]/3
+             If the characters ', \, ", //, or / * occur in the sequence
+             between the < and > delimiters, the behavior is undefined.
+             Similarly, if the characters ', \, //, or / * occur in the
+             sequence between the " delimiters, the behavior is undefined.
+            */
+            auto range = tok.spelling.substr(1, tok.spelling.size() - 2);
+            // TODO implement find for string_view to avoid this allocation
+            auto haystack = range.to_string();
+            for (const auto seq : header_name_undef_seqs) {
+                auto pos = haystack.find(seq);
+                if (pos != std::string::npos) {
+                    auto quote = seq == "'" ? "\"" : "'";
+                    location loc = tok.range.first.next_loc(pos + 1);
+                    diagnose(diagnostic::id::pp3_undef_char_in_hdr_name,
+                             loc, quote + seq + quote);
+                }
+            }
         }
         
         lexer.select(tok);

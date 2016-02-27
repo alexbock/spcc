@@ -75,6 +75,14 @@ namespace diagnostic {
                 category::error
             }
         },
+        {
+            id::pp3_undef_char_in_hdr_name,
+            {
+                "use of %% in a header name",
+                "[6.4.7]/3",
+                category::undefined
+            }
+        },
     };
 
     const info& find(id diag) {

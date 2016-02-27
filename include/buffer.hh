@@ -27,7 +27,7 @@ public:
     const buffer& buffer() const { return *buf_; }
     std::size_t offset() const { return offset_; }
     location find_spelling_loc() const;
-    location next_loc() { return { buffer(), offset() + 1 }; }
+    location next_loc(std::size_t n = 1) { return { buffer(), offset() + n }; }
 private:
     const class buffer* buf_;
     std::size_t offset_;

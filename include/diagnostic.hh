@@ -26,6 +26,7 @@ namespace diagnostic {
         pp3_unmatched_quote,
         pp3_ambiguous_lex,
         pp3_incomplete_comment,
+        pp3_undef_char_in_hdr_name,
     };
 
     struct info {
