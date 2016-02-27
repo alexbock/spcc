@@ -107,6 +107,38 @@ namespace diagnostic {
                 category::warning
             }
         },
+        {
+            id::pp4_expected_macro_name,
+            {
+                "expected macro name",
+                "[6.10]",
+                category::error
+            }
+        },
+        {
+            id::pp4_extra_after_directive,
+            {
+                "extra tokens after %% directive",
+                "[6.10]",
+                category::error
+            }
+        },
+        {
+            id::pp4_macro_redef,
+            {
+                "macro '%%' redefined differently",
+                "[6.10.3]/2",
+                category::error
+            }
+        },
+        {
+            id::aux_previous_def,
+            {
+                "previous definition is here",
+                {},
+                category::auxiliary
+            }
+        },
     };
 
     const info& find(id diag) {

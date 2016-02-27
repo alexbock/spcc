@@ -30,6 +30,10 @@ namespace diagnostic {
         pp3_undef_char_in_hdr_name,
         pp4_error_directive,
         pp4_unknown_pragma,
+        pp4_expected_macro_name,
+        pp4_extra_after_directive,
+        pp4_macro_redef,
+        aux_previous_def,
     };
 
     struct info {

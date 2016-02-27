@@ -45,7 +45,10 @@ namespace pp {
 
     struct macro {
         string_view name;
+        location loc;
         std::vector<token> body;
+
+        std::vector<string_view> param_names;
         bool function_like = false;
         bool variadic = false;
     };
@@ -68,10 +71,15 @@ namespace pp {
         optional<token> peek(ws_mode space, ws_mode newline);
         optional<token> get(ws_mode space, ws_mode newline);
         std::vector<token> finish_line();
+        void finish_directive_line(token name);
 
         void handle_null_directive();
         void handle_error_directive();
         void handle_pragma_directive();
+        void handle_line_directive();
+        void handle_define_directive();
+
+        void maybe_diagnose_macro_redefinition(const macro& def) const;
 
         std::unique_ptr<buffer> buf;
         std::vector<token> tokens;

@@ -298,6 +298,39 @@ std::vector<token> p4m::finish_line() {
     return tokens;
 }
 
+void p4m::finish_directive_line(token name) {
+    if (!finish_line().empty()) {
+        diagnose(diagnostic::id::pp4_extra_after_directive,
+                 name.range.first, name.spelling);
+    }
+}
+
+void p4m::maybe_diagnose_macro_redefinition(const macro& def) const {
+    auto old = macros.find(def.name);
+    if (old == macros.end()) return;
+    bool bad = false;
+    if (def.function_like != old->second.function_like) bad = true;
+    if (def.variadic != old->second.variadic) bad = true;
+    if (def.body.size() != old->second.body.size()) bad = true;
+    for (std::size_t i = 0; i < def.body.size(); ++i) {
+        if (def.body[i].spelling != old->second.body[i].spelling) {
+            bad = true;
+            break;
+        }
+    }
+    if (def.param_names.size() != old->second.param_names.size()) bad = true;
+    for (std::size_t i = 0; i < def.param_names.size(); ++i) {
+        if (def.param_names[i] != old->second.param_names[i]) {
+            bad = true;
+            break;
+        }
+    }
+    if (bad) {
+        diagnose(diagnostic::id::pp4_macro_redef, def.loc, def.name);
+        diagnose(diagnostic::id::aux_previous_def, old->second.loc);
+    }
+}
+
 void p4m::handle_null_directive() {
     assert(get(SKIP, TAKE)->is(token::newline));
 }
@@ -319,15 +352,39 @@ void p4m::handle_error_directive() {
 
 void p4m::handle_pragma_directive() {
     auto pragma_tok = *get(SKIP, STOP);
-    auto loc = pragma_tok.range.first;
+    const auto loc = pragma_tok.range.first;
     auto next = get(SKIP, STOP);
     if (next && next->spelling == "STDC") {
-        diagnostic::diagnose(diagnostic::id::not_yet_implemented, loc,
-                             "#pragma STDC");
+        diagnose(diagnostic::id::not_yet_implemented, loc, "#pragma STDC");
     } else {
         diagnostic::diagnose(diagnostic::id::pp4_unknown_pragma, loc);
     }
     (void)finish_line();
+}
+
+void p4m::handle_line_directive() {
+    auto line_tok = *get(SKIP, STOP);
+    const auto loc = line_tok.range.first;
+    diagnose(diagnostic::id::not_yet_implemented, loc, "#line directive");
+    (void)finish_line();
+}
+
+void p4m::handle_define_directive() {
+    auto define_tok = *get(SKIP, STOP);
+    const auto loc = define_tok.range.first;
+    auto name = get(SKIP, STOP);
+    if (!name || !name->is(token::identifier)) {
+        diagnose(diagnostic::id::pp4_expected_macro_name, loc);
+        (void)finish_line();
+        return;
+    }
+    macro mac{name->spelling, name->range.first};
+    if (peek(STOP, STOP) && peek(STOP, STOP)->is(punctuator::paren_left)) {
+        // TODO
+    }
+    mac.body = finish_line();
+    maybe_diagnose_macro_redefinition(mac);
+    macros.insert({ mac.name, std::move(mac) });
 }
 
 std::vector<token> p4m::process() {
@@ -345,6 +402,10 @@ std::vector<token> p4m::process() {
                 handle_error_directive();
             } else if (id->spelling == "pragma") {
                 handle_pragma_directive();
+            } else if (id->spelling == "line") {
+                handle_line_directive();
+            } else if (id->spelling == "define") {
+                handle_define_directive();
             }
         } else {
             allow_directive = false;
