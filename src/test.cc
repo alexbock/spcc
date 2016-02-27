@@ -93,6 +93,8 @@ void run_pp_regex_tests() {
     assert(std::regex_match("#", pp::regex::punctuator));
     assert(std::regex_match("// comment\n", pp::regex::space));
     assert(std::regex_match("/*comment*/", pp::regex::space));
+    assert(std::regex_match("/*comment\n", pp::regex::space));
     assert(!std::regex_match("/*/*comment*/*/", pp::regex::space));
+    assert(std::regex_match("/*/*comment*/", pp::regex::space));
     assert(std::regex_match("foo", pp::regex::identifier));
 }

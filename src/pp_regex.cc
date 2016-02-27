@@ -21,7 +21,7 @@ namespace pp { namespace regex {
         { "punc5-7", "@punc5@|@punc6@|@punc7@" },
         { "punctuator", "@punc1-4@|@punc5-7@" },
         { "line-comment", R"(//.*\n)" },
-        { "multiline-comment", R"(/\*[\s\S]*?\*/)" },
+        { "multiline-comment", R"(/\*[\s\S]*?(\*/|[/s/S]*(?!\*/)[/s/S]*\n))" },
         { "comment", "@line-comment@|@multiline-comment@" },
         { "space", R"(@comment@| )" },
         { "newline", R"(\n)" },

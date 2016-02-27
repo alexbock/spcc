@@ -6,6 +6,10 @@
 #include <cstring>
 
 namespace util {
+    inline bool starts_with(string_view haystack, string_view needle) {
+        return haystack.substr(0, needle.size()) == needle;
+    }
+
     inline bool ends_with(string_view haystack, string_view needle) {
         if (needle.size() > haystack.size()) return false;
         return haystack.substr(haystack.size() - needle.size()) == needle;

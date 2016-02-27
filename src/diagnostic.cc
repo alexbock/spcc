@@ -67,6 +67,14 @@ namespace diagnostic {
                 category::error
             }
         },
+        {
+            id::pp3_incomplete_comment,
+            {
+                "incomplete multiline comment",
+                "[5.1.1.2]/1.3",
+                category::error
+            }
+        },
     };
 
     const info& find(id diag) {

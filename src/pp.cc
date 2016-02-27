@@ -8,6 +8,7 @@
 #include <map>
 
 using diagnostic::diagnose;
+using util::starts_with;
 using util::ends_with;
 using util::reverse_adaptor;
 
@@ -218,6 +219,14 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
             auto it = punctuator_table.find(tok.spelling.to_string());
             assert(it != punctuator_table.end()); // table doesn't match regex
             tok.punc = it->second;
+        } else if (tok.is(token::space)) {
+            if (starts_with(tok.spelling, "/*")) {
+                if (!ends_with(tok.spelling, "*/")) {
+                    const auto loc = tok.range.first;
+                    diagnose(diagnostic::id::pp3_incomplete_comment, loc);
+                }
+            }
+            tok.kind = token::newline;
         }
         
         lexer.select(tok);

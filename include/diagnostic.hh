@@ -25,6 +25,7 @@ namespace diagnostic {
         pp2_missing_newline,
         pp3_unmatched_quote,
         pp3_ambiguous_lex,
+        pp3_incomplete_comment,
     };
 
     struct info {
