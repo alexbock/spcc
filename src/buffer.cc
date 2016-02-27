@@ -19,10 +19,13 @@ static bool operator<(std::size_t i, const derived_buffer::fragment& rhs) {
 std::size_t derived_buffer::offset_in_original(std::size_t offset) const {
     if (fragments_.empty() && !offset) return 0;
     auto it = std::upper_bound(fragments_.begin(), fragments_.end(), offset);
-    assert(it != fragments_.end());
-    auto result = it->parent_range.first;
-    if (it->propagate) result += offset - it->local_range.first;
-    return result;
+    if (it != fragments_.end()) {
+        auto result = it->parent_range.first;
+        if (it->propagate) result += offset - it->local_range.first;
+        return result;
+    } else {
+        return fragments_.back().parent_range.second;
+    }
 }
 
 string_view derived_buffer::peek() const {
@@ -42,11 +45,10 @@ void derived_buffer::propagate(std::size_t len) {
     fragments_.push_back({
         { data().size(), data().size() + len },
         { index_, index_ + len },
-        false
+        true
     });
-    index_ += len;
     data_ += peek().substr(0, len).to_string();
-
+    index_ += len;
 }
 
 void derived_buffer::replace(std::size_t len, string_view str) {
@@ -65,4 +67,8 @@ void derived_buffer::insert(string_view data) {
 
 void derived_buffer::erase(std::size_t len) {
     replace(len, "");
+}
+
+bool derived_buffer::done() const {
+    return index_ == parent()->data().size();
 }

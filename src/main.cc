@@ -1,5 +1,8 @@
 #include "options.hh"
 #include "diagnostic.hh"
+#include "buffer.hh"
+#include "pp.hh"
+#include "test.hh"
 
 #include <iostream>
 #include <cstdlib>
@@ -13,6 +16,7 @@ static void show_version();
 static void process_input_files();
 
 int main(int argc, char** argv) {
+    test::run_tests();
     options::parse(argc, argv);
     if (options::state.show_version) show_version();
     if (options::state.show_help) show_help();
@@ -40,8 +44,13 @@ void process_input_files() {
         }
         std::stringstream ss;
         ss << file.rdbuf();
-        auto buffer = ss.str();
+        auto data = ss.str();
         ss.clear();
-        // TODO
+
+        std::cout << "@@@" << data << "@@@\n\n";
+        auto buf = std::make_unique<raw_buffer>(filename, data);
+        auto post_p1 = pp::perform_phase_one(std::move(buf));
+        auto post_p2 = pp::perform_phase_two(std::move(post_p1));
+        std::cout << "@@@" << post_p2->data() << "@@@\n";
     }
 }

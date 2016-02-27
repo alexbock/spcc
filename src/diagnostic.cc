@@ -26,6 +26,22 @@ namespace diagnostic {
                 category::error
             }
         },
+        {
+            id::invalid_utf8,
+            {
+                "invalid UTF-8",
+                {},
+                category::error
+            }
+        },
+        {
+            id::pp2_missing_newline,
+            {
+                "missing newline at end of file",
+                "[5.1.1.2]/1.2",
+                category::error
+            }
+        },
     };
 
     const info& find(id diag) {

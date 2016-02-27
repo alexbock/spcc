@@ -20,6 +20,8 @@ namespace diagnostic {
     enum class id {
         no_input_files,
         cannot_open_file,
+        invalid_utf8,
+        pp2_missing_newline,
     };
 
     struct info {

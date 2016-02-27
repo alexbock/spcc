@@ -67,6 +67,8 @@ public:
     void replace(std::size_t len, string_view data);
     void insert(string_view data);
     void erase(std::size_t len);
+    bool done() const;
+    std::size_t parent_index() const { return index_; }
 
     struct fragment {
         std::pair<std::size_t, std::size_t> local_range;
@@ -76,7 +78,7 @@ public:
 private:
     std::unique_ptr<const buffer> parent_;
     std::string data_;
-    std::size_t index_;
+    std::size_t index_ = 0;
     std::vector<fragment> fragments_;
 };
 

@@ -34,6 +34,11 @@ namespace meta {
         stream << str.to_string();
         return stream;
     }
+
+    inline bool operator==(string_view a, string_view b) {
+        if (a.size() != b.size()) return false;
+        return !std::strncmp(a.begin(), b.begin(), a.size());
+    }
 }
 
 using meta::string_view;

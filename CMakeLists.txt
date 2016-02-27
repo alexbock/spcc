@@ -8,7 +8,9 @@ set(SOURCE
     src/diagnostic.cc
     src/main.cc
     src/options.cc
+    src/test.cc
     src/platform.cc
+    src/pp.cc
     src/utf8.cc
 )
 set(INCLUDE
@@ -17,8 +19,11 @@ set(INCLUDE
     include/optional.hh
     include/options.hh
     include/string_view.hh
+    include/test.hh
     include/platform.hh
+    include/pp.hh
     include/utf8.hh
+    include/util.hh
 )
 add_executable(spcc
     ${SOURCE}

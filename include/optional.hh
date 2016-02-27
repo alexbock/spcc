@@ -74,7 +74,7 @@ namespace meta {
             assert(valid);
             return reinterpret_cast<const T&>(data);
         }
-        operator bool() const { return valid; }
+        explicit operator bool() const { return valid; }
         T* operator->() { return &value(); }
         const T* operator->() const { return &value(); }
         T& operator*() { return value(); }
