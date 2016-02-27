@@ -32,7 +32,7 @@ namespace pp { namespace regex {
         { "simple-escape", R"(\\('|"|\?|\\|a|b|f|n|r|t|v))" },
         { "octal-escape", R"(\\[0-7]{1,3})" },
         { "hex-escape", R"(\\x@hex-digit@+)" },
-        { "sc-char", R"(@escape-seq@|[^\\])" },
+        { "sc-char", R"(@escape-seq@|[^\\\n])" },
     };
 
     std::string resolve_references(std::string pattern) {
