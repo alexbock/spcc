@@ -9,6 +9,7 @@
 namespace meta {
     class string_view {
     public:
+        string_view() : str{nullptr}, len{0} { }
         string_view(const std::string& s) : str{s.c_str()}, len{s.size()} { }
         string_view(const char* s) : str{s}, len{std::strlen(s)} { }
         string_view(const char* s, std::size_t len) : str{s}, len{len} { }

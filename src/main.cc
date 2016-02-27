@@ -3,6 +3,7 @@
 #include "buffer.hh"
 #include "pp.hh"
 #include "test.hh"
+#include "platform.hh"
 
 #include <iostream>
 #include <cstdlib>
@@ -10,6 +11,7 @@
 #include <sstream>
 
 using diagnostic::diagnose;
+using namespace platform::stream;
 
 static void show_help();
 static void show_version();
@@ -52,5 +54,18 @@ void process_input_files() {
         auto post_p1 = pp::perform_phase_one(std::move(buf));
         auto post_p2 = pp::perform_phase_two(std::move(post_p1));
         std::cout << "@@@" << post_p2->data() << "@@@\n";
+        auto tokens = pp::perform_phase_three(*post_p2);
+        bool first = false;
+        for (const auto tok : tokens) {
+            if (!first) {
+                set_color(stdout, color::blue);
+                std::cout << "·";
+                reset_attributes(stdout);
+            }
+            first = false;
+
+            std::cout << tok.spelling;
+        }
+        std::cout << "@@@\n";
     }
 }

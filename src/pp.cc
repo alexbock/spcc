@@ -2,13 +2,16 @@
 #include "utf8.hh"
 #include "diagnostic.hh"
 #include "util.hh"
+#include "optional.hh"
 
+#include <cassert>
 #include <map>
 
 using diagnostic::diagnose;
 using util::ends_with;
+using util::reverse_adaptor;
 
-static std::map<std::string, std::string> trigraphs = {
+std::map<std::string, std::string> trigraphs = {
     { R"(??=)", "#" },
     { R"(??()", "[" },
     { R"(??/)", "\\" },
@@ -39,7 +42,7 @@ std::unique_ptr<buffer> pp::perform_phase_one(std::unique_ptr<buffer> in) {
                 out->replace(*utf8::measure_code_point(out->peek()), ucn);
             } else {
                 location loc{*out->parent(), out->parent_index()};
-                diagnose(diagnostic::id::invalid_utf8, loc);
+                diagnose(diagnostic::id::pp1_invalid_utf8, loc);
                 out->replace(1, "\\u001A"); // U+001A "SUBSTITUTE"
             }
             continue;
@@ -97,3 +100,128 @@ std::unique_ptr<buffer> pp::perform_phase_two(std::unique_ptr<buffer> in) {
     }
     return std::move(out);
 }
+
+string_view pp::lexer::peek() const {
+    return buf.data().substr(index_);
+}
+
+bool pp::lexer::done() const {
+    return index_ == buf.data().size();
+}
+
+void pp::lexer::select(token tok) {
+    index_ += tok.spelling.size();
+    tokens.push_back(std::move(tok));
+}
+
+bool pp::lexer::allow_header_name() const {
+    /* [6.4]/4 
+     header name preprocessing tokens are recognized
+     only within #include preprocessing directives
+    */
+    bool found_include = false;
+    bool found_hash = false;
+    for (auto tok : reverse_adaptor(tokens)) {
+        if (!found_include) {
+            if (tok.spelling == "include") {
+                found_include = true;
+                continue;
+            }
+        } else if (!found_hash) {
+            if (tok.is(punctuator::hash)) {
+                found_hash = true;
+                continue;
+            }
+        } else {
+            if (tok.kind == token::newline) return true;
+        }
+        if (tok.is(token::space)) continue;
+        if (tok.is(token::newline)) continue;
+        return false;
+    }
+    return found_include && found_hash;
+}
+
+optional<token> pp::lexer::try_lex(token_kind kind, const std::regex& regex) {
+    if (kind == token::header_name && !allow_header_name()) return {};
+    std::cmatch match;
+    bool matched = std::regex_search(
+         peek().begin(),
+         peek().end(),
+         match,
+         regex,
+         std::regex_constants::match_continuous
+    );
+    if (matched) return token(kind, match, buf);
+    else return {};
+}
+
+static std::map<token_kind, const std::regex*> pp_token_patterns = {
+    { token::header_name, &pp::regex::header_name },
+    { token::pp_number, &pp::regex::pp_number },
+    { token::identifier, &pp::regex::identifier },
+    { token::string_literal, &pp::regex::string_literal },
+    { token::character_constant, &pp::regex::char_constant },
+    { token::punctuator, &pp::regex::punctuator },
+    { token::space, &pp::regex::space },
+    { token::newline, &pp::regex::newline },
+};
+
+std::vector<token> pp::perform_phase_three(const buffer& in) {
+    lexer lexer{in};
+    while (!lexer.done()) {
+        /* [6.4]/4
+         If the input stream has been parsed into preprocessing tokens up to
+         a given character, the next preprocessing token is the longest
+         sequence of characters that could constitute a preprocessing token.
+        */
+        std::vector<token> lexes;
+        for (const auto pattern : pp_token_patterns) {
+            auto tok = lexer.try_lex(pattern.first, *pattern.second);
+            if (tok) lexes.push_back(std::move(*tok));
+        }
+        // if we didn't match anything, this is an "other" token
+        if (lexes.empty()) {
+            location loc{in, lexer.index()};
+            std::pair<location, location> range{loc, loc.next_loc()};
+            token other{token::other, lexer.peek().substr(0, 1), range};
+            if (other.spelling == "'" || other.spelling == "\"") {
+                const auto name = other.spelling == "'" ? "single" : "double";
+                diagnose(diagnostic::id::pp3_unmatched_quote, loc, name);
+            }
+            lexes.push_back(std::move(other));
+        }
+        // sort tokens in descending order by spelling size
+        std::sort(lexes.rbegin(), lexes.rend(), [](auto a, auto b) {
+            return a.spelling.size() < b.spelling.size();
+        });
+        // if there were multiple equally long matches then we have an
+        // ambiguity unless it is between a header name and a string literal
+        if (lexes.size() > 1) {
+            if (lexes[0].spelling.size() == lexes[1].spelling.size()) {
+                /* [6.4]/4
+                a sequence of characters that could be either a header
+                name or a string literal is recognized as the former
+                */
+                bool exempt = true;
+                exempt &= lexes[0].is(token::header_name);
+                exempt &= lexes[1].is(token::string_literal);
+                if (!exempt) {
+                    const auto loc = lexes[0].range.first;
+                    diagnose(diagnostic::id::pp3_ambiguous_lex, loc);
+                }
+            }
+        }
+
+        auto tok = lexes[0];
+        if (tok.is(token::punctuator)) {
+            auto it = punctuator_table.find(tok.spelling.to_string());
+            assert(it != punctuator_table.end()); // table doesn't match regex
+            tok.punc = it->second;
+        }
+        
+        lexer.select(tok);
+    }
+    return std::move(lexer.tokens);
+}
+

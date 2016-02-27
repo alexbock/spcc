@@ -1,17 +1,20 @@
 #include "test.hh"
 #include "buffer.hh"
 #include "utf8.hh"
+#include "pp.hh"
 
 #include <iostream>
 #include <memory>
 
 static void run_derived_buffer_tests();
 static void run_utf8_tests();
+static void run_pp_regex_tests();
 
 void test::run_tests() {
 #ifndef NDEBUG
     run_derived_buffer_tests();
     run_utf8_tests();
+    run_pp_regex_tests();
 #else
     std::cerr << "tests disabled due to NDEBUG\n";
 #endif
@@ -70,4 +73,26 @@ void run_utf8_tests() {
     assert(!utf8::is_continuation("€"[0]));
     assert(!utf8::is_continuation("a"[0]));
     assert(!utf8::is_leader("a"[0]));
+}
+
+void run_pp_regex_tests() {
+    std::cerr << "=== running preprocessor regex tests\n";
+    assert(std::regex_match("<foo.h>", pp::regex::header_name));
+    assert(std::regex_match("< bar/cat.hh >", pp::regex::header_name));
+    assert(std::regex_match("\"foo.h\"", pp::regex::header_name));
+    assert(std::regex_match("\" bar/cat.hh \"", pp::regex::header_name));
+    assert(!std::regex_match("< bar/cat.hh \"", pp::regex::header_name));
+    assert(std::regex_match("ab\\u1111c123_f", pp::regex::identifier));
+    assert(!std::regex_match("5abc", pp::regex::identifier));
+    assert(std::regex_match("5.6", pp::regex::pp_number));
+    assert(std::regex_match(".6.", pp::regex::pp_number));
+    assert(std::regex_match("123", pp::regex::pp_number));
+    assert(std::regex_match("123.456efg", pp::regex::pp_number));
+    assert(std::regex_match("5.6e+10", pp::regex::pp_number));
+    assert(!std::regex_match("five", pp::regex::pp_number));
+    assert(std::regex_match("#", pp::regex::punctuator));
+    assert(std::regex_match("// comment\n", pp::regex::space));
+    assert(std::regex_match("/*comment*/", pp::regex::space));
+    assert(!std::regex_match("/*/*comment*/*/", pp::regex::space));
+    assert(std::regex_match("foo", pp::regex::identifier));
 }

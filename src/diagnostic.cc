@@ -27,10 +27,10 @@ namespace diagnostic {
             }
         },
         {
-            id::invalid_utf8,
+            id::pp1_invalid_utf8,
             {
                 "invalid UTF-8",
-                {},
+                "[5.1.1.2]/1.1",
                 category::error
             }
         },
@@ -39,6 +39,23 @@ namespace diagnostic {
             {
                 "missing newline at end of file",
                 "[5.1.1.2]/1.2",
+                category::error
+            }
+        },
+        {
+            id::pp3_unmatched_quote,
+            {
+                "%% quote did match any preprocessing token",
+                "[6.4]/3",
+                category::undefined
+            }
+        },
+        {
+            id::pp3_ambiguous_lex,
+            {
+                "interpretation of character sequence as "
+                "a preprocessing token is ambiguous",
+                "[6.4]",
                 category::error
             }
         },

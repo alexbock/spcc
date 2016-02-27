@@ -11,6 +11,8 @@ set(SOURCE
     src/test.cc
     src/platform.cc
     src/pp.cc
+    src/pp_regex.cc
+    src/punctuator.cc
     src/utf8.cc
 )
 set(INCLUDE
@@ -20,8 +22,10 @@ set(INCLUDE
     include/options.hh
     include/string_view.hh
     include/test.hh
+    include/token.hh
     include/platform.hh
     include/pp.hh
+    include/punctuator.hh
     include/utf8.hh
     include/util.hh
 )
