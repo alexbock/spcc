@@ -10,7 +10,7 @@ namespace meta {
     template<typename T>
     class optional {
     public:
-        optional() : valid{false} { }
+        optional() { }
         optional(const T& t) {
             operator=(t);
         }
@@ -88,7 +88,7 @@ namespace meta {
         }
 
         std::aligned_union_t<0, T> data;
-        bool valid;
+        bool valid = false;
     };
 }
 

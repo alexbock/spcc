@@ -47,6 +47,7 @@ namespace pp {
         string_view name;
         location loc;
         std::vector<token> body;
+        bool being_replaced = false;
 
         std::vector<string_view> param_names;
         bool function_like = false;
@@ -80,12 +81,21 @@ namespace pp {
         void handle_define_directive();
 
         void maybe_diagnose_macro_redefinition(const macro& def) const;
+        optional<std::vector<token>> maybe_expand_macro();
+        void hijack();
+        void unhijack();
 
         std::unique_ptr<buffer> buf;
         std::vector<token> tokens;
         std::vector<token> out;
         std::map<string_view, macro> macros;
         std::size_t index = 0;
+
+        struct saved_state {
+            std::vector<token> tokens;
+            std::size_t index;
+        };
+        std::vector<saved_state> saved_states;
     };
 }
 

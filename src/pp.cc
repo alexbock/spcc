@@ -332,6 +332,53 @@ void p4m::maybe_diagnose_macro_redefinition(const macro& def) const {
     }
 }
 
+optional<std::vector<token>> p4m::maybe_expand_macro() {
+    auto next = peek(SKIP, SKIP);
+    if (!next || !next->is(token::identifier) || next->blue) return {};
+    auto it = macros.find(next->spelling);
+    if (it == macros.end()) return {};
+    auto& mac = it->second;
+    if (mac.being_replaced) {
+        tokens[*find(SKIP, SKIP)].blue = true;
+        return {};
+    }
+    if (mac.function_like) {
+        // TODO
+        assert(false);
+    } else {
+        get(SKIP, SKIP);
+        mac.being_replaced = true;
+        std::vector<token> expansion;
+        hijack();
+        tokens = mac.body;
+        while (peek(SKIP, SKIP)) {
+            auto result = maybe_expand_macro();
+            if (result) {
+                expansion.insert(expansion.end(),
+                                 result->begin(), result->end());
+            } else {
+                expansion.push_back(*get(SKIP, SKIP));
+            }
+        }
+        unhijack();
+        mac.being_replaced = false;
+        return expansion;
+    }
+}
+
+void p4m::hijack() {
+    saved_states.push_back({ std::move(tokens), index });
+    index = 0;
+    tokens.clear();
+}
+
+void p4m::unhijack() {
+    assert(!saved_states.empty());
+    tokens = std::move(saved_states.back().tokens);
+    index = saved_states.back().index;
+    saved_states.pop_back();
+}
+
 void p4m::handle_null_directive() {
     assert(get(SKIP, TAKE)->is(token::newline));
 }
@@ -445,11 +492,13 @@ void p4m::handle_define_directive() {
 std::vector<token> p4m::process() {
     bool allow_directive = true;
     while (index < tokens.size()) {
-        auto next = *get(SKIP, TAKE);
+        auto next = *peek(SKIP, TAKE);
         if (next.is(token::newline)) {
+            (void)get(SKIP, TAKE);
             allow_directive = true;
             continue;
         } else if (next.is(punctuator::hash) && allow_directive) {
+            (void)get(SKIP, TAKE);
             auto id = peek(SKIP, STOP);
             if (!id) {
                 handle_null_directive();
@@ -464,7 +513,11 @@ std::vector<token> p4m::process() {
             }
         } else {
             allow_directive = false;
-            // TODO
+            if (auto tokens = maybe_expand_macro()) {
+                out.insert(out.end(), tokens->begin(), tokens->end());
+            } else {
+                out.push_back(*get(SKIP, TAKE));
+            }
         }
     }
     return std::move(out);

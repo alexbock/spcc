@@ -51,6 +51,7 @@ struct token {
     string_view spelling;
     std::pair<location, location> range;
     enum punctuator punc;
+    bool blue = false; // ineligible for further macro replacement
 };
 
 using token_kind = token::token_kind;

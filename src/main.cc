@@ -35,6 +35,20 @@ void show_version() {
     std::cout << "spcc 0.1 (c) 2016 Alexander Bock\n";
 }
 
+static void debug_dump_tokens(const std::vector<token> tokens) {
+    bool first = false;
+    for (const auto tok : tokens) {
+        if (!first) {
+            set_color(stdout, color::blue);
+            std::cout << "·";
+            reset_attributes(stdout);
+        }
+        first = false;
+
+        std::cout << tok.spelling;
+    }
+}
+
 void process_input_files() {
     if (options::state.input_filenames.empty()) {
         diagnose(diagnostic::id::no_input_files, {});
@@ -59,19 +73,11 @@ void process_input_files() {
         auto post_p2 = pp::perform_phase_two(std::move(post_p1));
         std::cout << "@@@" << post_p2->data() << "@@@\n";
         auto tokens = pp::perform_phase_three(*post_p2);
-        bool first = false;
-        for (const auto tok : tokens) {
-            if (!first) {
-                set_color(stdout, color::blue);
-                std::cout << "·";
-                reset_attributes(stdout);
-            }
-            first = false;
-
-            std::cout << tok.spelling;
-        }
+        debug_dump_tokens(tokens);
         std::cout << "@@@\n";
         pp::phase_four_manager p4m(std::move(post_p2), std::move(tokens));
         tokens = p4m.process();
+        debug_dump_tokens(tokens);
+        std::cout << "@@@\n";
     }
 }
