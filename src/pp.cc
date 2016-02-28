@@ -747,8 +747,15 @@ std::vector<token> p4m::process() {
             }
         } else {
             allow_directive = false;
-            if (auto tokens = maybe_expand_macro()) {
-                out.insert(out.end(), tokens->begin(), tokens->end());
+            auto old_index = index;
+            auto invocation_start = tokens.begin() + index;
+            if (auto exp = maybe_expand_macro()) {
+                // TODO is it visible to the user if we only do
+                // inline expansion at the top level?
+                auto invocation_end = tokens.begin() + index;
+                tokens.erase(invocation_start, invocation_end);
+                tokens.insert(invocation_start, exp->begin(), exp->end());
+                index = old_index;
             } else {
                 out.push_back(*get(SKIP, TAKE));
             }
