@@ -344,11 +344,13 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         tokens[*find(SKIP, SKIP)].blue = true;
         return {};
     }
+    const auto pre_name_index = index;
     next = get(SKIP, SKIP);
     if (mac.function_like) {
         auto lparen = peek(SKIP, SKIP);
         if (!lparen || !lparen->is(punctuator::paren_left)) {
-            return std::vector<token>{*next};
+            index = pre_name_index;
+            return {};
         }
         get(SKIP, SKIP);
         // collect arguments
@@ -381,10 +383,14 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                 arg.push_back(*tok);
             }
         }
+        if (args.size() == 1 && args[0].empty() && mac.param_names.empty()) {
+            args.pop_back();
+        }
         if (!done) {
             diagnose(diagnostic::id::pp4_missing_macro_args_end, loc);
             return std::vector<token>{};
         } else if (args.size() < mac.param_names.size()) {
+            // TODO fix grammar of was/were for these two checks
             const auto diff = mac.param_names.size() - args.size();
             std::string req = std::to_string(mac.param_names.size());
             if (mac.variadic) req = " at least " + req;
@@ -524,10 +530,14 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
 std::vector<token> p4m::macro_expand_hijacked_tokens() {
     std::vector<token> expansion;
     while (peek(TAKE, TAKE)) {
+        auto old_index = index;
+        auto invocation_start = tokens.begin() + index;
         auto result = maybe_expand_macro();
         if (result) {
-            expansion.insert(expansion.end(),
-                             result->begin(), result->end());
+            tokens.erase(invocation_start, tokens.begin() + index);
+            tokens.insert(invocation_start,
+                          result->begin(), result->end());
+            index = old_index;
         } else {
             expansion.push_back(*get(TAKE, TAKE));
         }
