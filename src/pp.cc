@@ -355,7 +355,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         std::vector<token> arg;
         std::size_t inner_parens = 0;
         bool done = false;
-        for (auto tok = get(SKIP, SKIP); tok; tok = get(SKIP, SKIP)) {
+        for (auto tok = get(TAKE, TAKE); tok; tok = get(TAKE, TAKE)) {
             if (tok->is(punctuator::paren_right) && inner_parens) {
                 --inner_parens;
             } else if (tok->is(punctuator::paren_left)) {
@@ -368,6 +368,14 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             } else if (tok->is(punctuator::comma) && !inner_parens) {
                 args.push_back(std::move(arg));
                 arg.clear();
+            } else if (tok->is(token::newline)) {
+                /* [6.10.3]/10
+                 Within the sequence of preprocessing tokens making up an
+                 invocation of a function-like macro, new-line is considered
+                 a normal white-space character.
+                */
+                tok->kind = token::space;
+                arg.push_back(*tok);
             } else {
                 arg.push_back(*tok);
             }
@@ -448,7 +456,6 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                     continue;
                 }
                 auto& arg = args[*index];
-                // TODO need to preserve whitespace up until this point
                 std::string data;
                 for (auto tok : arg) {
                     bool needs_escape = false;
@@ -502,13 +509,13 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
 
 std::vector<token> p4m::macro_expand_hijacked_tokens() {
     std::vector<token> expansion;
-    while (peek(SKIP, SKIP)) {
+    while (peek(TAKE, TAKE)) {
         auto result = maybe_expand_macro();
         if (result) {
             expansion.insert(expansion.end(),
                              result->begin(), result->end());
         } else {
-            expansion.push_back(*get(SKIP, SKIP));
+            expansion.push_back(*get(TAKE, TAKE));
         }
     }
     return expansion;
