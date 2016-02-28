@@ -292,10 +292,10 @@ optional<token> p4m::get(ws_mode space, ws_mode newline) {
 
 std::vector<token> p4m::finish_line() {
     std::vector<token> tokens;
-    for (auto tok = get(SKIP, STOP); tok; tok = get(SKIP, STOP)) {
+    for (auto tok = get(TAKE, STOP); tok; tok = get(TAKE, STOP)) {
         tokens.push_back(*tok);
     }
-    assert(get(SKIP, TAKE)->is(token::newline));
+    assert(get(STOP, TAKE)->is(token::newline));
     return tokens;
 }
 
@@ -312,6 +312,7 @@ void p4m::maybe_diagnose_macro_redefinition(const macro& def) const {
     bool bad = false;
     if (def.function_like != old->second.function_like) bad = true;
     if (def.variadic != old->second.variadic) bad = true;
+    // TODO ignore whitespace differences [6.10.3]/1
     if (def.body.size() != old->second.body.size()) bad = true;
     for (std::size_t i = 0; i < def.body.size(); ++i) {
         if (def.body[i].spelling != old->second.body[i].spelling) {
@@ -413,6 +414,11 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             std::vector<token> expansion = macro_expand_hijacked_tokens();
             unhijack();
             arg = std::move(expansion);
+            for (auto& tok : arg) {
+                if (tok.is(punctuator::hash_hash)) {
+                    tok.blue = true;
+                }
+            }
         }
         // replace parameter names and handle #
         auto get_arg = [&](string_view name) -> optional<std::size_t> {
@@ -422,8 +428,10 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             return {};
         };
         std::vector<token> expansion;
-        for (std::size_t i = 0; i < mac.body.size(); ++i) {
-            auto tok = mac.body[i];
+        hijack();
+        tokens = mac.body;
+        for (auto otok = get(TAKE, TAKE); otok; otok = get(TAKE, TAKE)) {
+            auto tok = *otok;
             if (tok.is(token::identifier)) {
                 if (auto index = get_arg(tok.spelling)) {
                     auto& arg = args[*index];
@@ -442,10 +450,9 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                 }
             } else if (tok.is(punctuator::hash)) {
                 optional<std::size_t> index;
-                if (i + 1 < mac.body.size()) {
-                    auto next = mac.body[i + 1];
-                    if (next.is(token::identifier)) {
-                        index = get_arg(next.spelling);
+                if (auto next = peek(SKIP, SKIP)) {
+                    if (next->is(token::identifier)) {
+                        index = get_arg(next->spelling);
                     }
                 }
                 if (!index) {
@@ -455,12 +462,18 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                 }
                 auto& arg = args[*index];
                 std::string data;
+                bool last_was_space = false;
                 for (auto tok : arg) {
                     bool needs_escape = false;
                     needs_escape |= tok.is(token::string_literal);
                     needs_escape |= tok.is(token::character_constant);
-                    if (tok.is(token::space)) data += " ";
-                    else if (!needs_escape) data += tok.spelling.to_string();
+                    if (!tok.is(token::space)) last_was_space = false;
+                    if (tok.is(token::space)) {
+                        if (!last_was_space) {
+                            data += " ";
+                            last_was_space = true;
+                        }
+                    } else if (!needs_escape) data += tok.spelling.to_string();
                     else {
                         for (char c : tok.spelling) {
                             if (c == '"') data += "\\\"";
@@ -479,12 +492,13 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                              tok.range.first);
                 } else {
                     expansion.push_back(tokens[0]);
-                    ++i;
+                    get(SKIP, SKIP);
                     continue;
                 }
             }
             expansion.push_back(tok);
         }
+        unhijack();
         // rescan
         mac.being_replaced = true;
         hijack();
@@ -527,7 +541,7 @@ std::vector<token> p4m::handle_concatenation(std::vector<token> in) {
     tokens = in;
     while (peek(TAKE, TAKE)) {
         auto tok = *get(TAKE, TAKE);
-        if (tok.is(punctuator::hash_hash)) {
+        if (tok.is(punctuator::hash_hash) && !tok.blue) {
             diagnose(diagnostic::id::pp4_cannot_use_hash_hash_here,
                      tok.range.first);
             continue;
@@ -535,7 +549,7 @@ std::vector<token> p4m::handle_concatenation(std::vector<token> in) {
             result.push_back(tok);
         } else {
             auto next = peek(SKIP, SKIP);
-            if (next && next->is(punctuator::hash_hash)) {
+            if (next && next->is(punctuator::hash_hash) && !next->blue) {
                 auto op = *get(SKIP, SKIP);
                 next = get(SKIP, SKIP);
                 if (!next) {
