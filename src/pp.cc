@@ -443,12 +443,12 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                     }
                 }
                 if (!index) {
-                    // TODO complain
+                    diagnose(diagnostic::id::pp4_stringize_no_parameter,
+                             tok.range.first);
                     continue;
                 }
                 auto& arg = args[*index];
                 // TODO need to preserve whitespace up until this point
-                // TODO stringize
                 std::string data;
                 for (auto tok : arg) {
                     // TODO escape strings and chars

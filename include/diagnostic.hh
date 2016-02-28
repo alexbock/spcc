@@ -41,6 +41,7 @@ namespace diagnostic {
         pp4_wrong_arity_macro_args,
         pp4_cannot_use_hash_hash_here,
         pp4_stringize_invalid_token,
+        pp4_stringize_no_parameter,
         aux_previous_def,
         aux_previous_use,
     };

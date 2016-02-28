@@ -200,6 +200,14 @@ namespace diagnostic {
             }
         },
         {
+            id::pp4_stringize_no_parameter,
+            {
+                "# must be followed a parameter name",
+                "[6.10.3.2]/2",
+                category::error
+            }
+        },
+        {
             id::aux_previous_def,
             {
                 "previous definition is here",
