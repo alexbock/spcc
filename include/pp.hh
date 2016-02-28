@@ -83,6 +83,7 @@ namespace pp {
         void maybe_diagnose_macro_redefinition(const macro& def) const;
         optional<std::vector<token>> maybe_expand_macro();
         std::vector<token> macro_expand_hijacked_tokens();
+        std::vector<token> handle_concatenation(std::vector<token> in);
         void hijack();
         void unhijack();
 

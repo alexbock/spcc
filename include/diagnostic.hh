@@ -42,6 +42,7 @@ namespace diagnostic {
         pp4_cannot_use_hash_hash_here,
         pp4_stringize_invalid_token,
         pp4_stringize_no_parameter,
+        pp4_concatenate_invalid_token,
         aux_previous_def,
         aux_previous_use,
     };

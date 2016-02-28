@@ -27,6 +27,7 @@ struct token {
         other,
         space,
         newline,
+        placemarker,
     };
 
     token(token_kind kind, string_view spelling,

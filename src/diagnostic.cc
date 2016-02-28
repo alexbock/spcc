@@ -196,7 +196,7 @@ namespace diagnostic {
                 "use of # operator did not produce a valid "
                 "character string literal",
                 "[6.10.3.2]/2",
-                category::error
+                category::undefined
             }
         },
         {
@@ -205,6 +205,15 @@ namespace diagnostic {
                 "# must be followed a parameter name",
                 "[6.10.3.2]/2",
                 category::error
+            }
+        },
+        {
+            id::pp4_concatenate_invalid_token,
+            {
+                "use of ## operator did not produce a valid "
+                "preprocessing token",
+                "[6.10.3.3]/3",
+                category::undefined
             }
         },
         {

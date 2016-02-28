@@ -414,7 +414,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             unhijack();
             arg = std::move(expansion);
         }
-        // replace parameter names and handle #/##
+        // replace parameter names and handle #
         auto get_arg = [&](string_view name) -> optional<std::size_t> {
             for (std::size_t i = 0; i < mac.param_names.size(); ++i) {
                 if (mac.param_names[i] == name) return i;
@@ -424,11 +424,6 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         std::vector<token> expansion;
         for (std::size_t i = 0; i < mac.body.size(); ++i) {
             auto tok = mac.body[i];
-            if (i + 1 < mac.body.size()) {
-                if (mac.body[i + 1].is(punctuator::hash_hash)) {
-                    // TODO
-                }
-            }
             if (tok.is(token::identifier)) {
                 if (auto index = get_arg(tok.spelling)) {
                     auto& arg = args[*index];
@@ -440,8 +435,6 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                     diagnose(diagnostic::id::not_yet_implemented,
                              tok.range.first, "__VA_ARGS__");
                 }
-            } else if (tok.is(punctuator::hash_hash)) {
-                // TODO complain hash at beginning
             } else if (tok.is(punctuator::hash)) {
                 optional<std::size_t> index;
                 if (i + 1 < mac.body.size()) {
@@ -473,7 +466,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                 }
                 data = util::ltrim(util::rtrim(data));
                 data = "\"" + data + "\"";
-                auto buf = std::make_unique<raw_buffer>("<stringize>", data);
+                auto buf = std::make_unique<raw_buffer>("<stringized>", data);
                 auto tokens = perform_phase_three(*buf);
                 extra_buffers.push_back(std::move(buf));
                 if (tokens.size() != 1) {
@@ -499,7 +492,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
     } else {
         mac.being_replaced = true;
         hijack();
-        tokens = mac.body;
+        tokens = handle_concatenation(mac.body);
         std::vector<token> expansion = macro_expand_hijacked_tokens();
         unhijack();
         mac.being_replaced = false;
@@ -519,6 +512,71 @@ std::vector<token> p4m::macro_expand_hijacked_tokens() {
         }
     }
     return expansion;
+}
+
+std::vector<token> p4m::handle_concatenation(std::vector<token> in) {
+    std::vector<token> result;
+    hijack();
+    tokens = in;
+    while (peek(TAKE, TAKE)) {
+        auto tok = *get(TAKE, TAKE);
+        if (tok.is(punctuator::hash_hash)) {
+            diagnose(diagnostic::id::pp4_cannot_use_hash_hash_here,
+                     tok.range.first);
+            continue;
+        } else if (tok.is(token::space) || tok.is(token::newline)) {
+            result.push_back(tok);
+        } else {
+            auto next = peek(SKIP, SKIP);
+            if (next && next->is(punctuator::hash_hash)) {
+                auto op = *get(SKIP, SKIP);
+                next = get(SKIP, SKIP);
+                if (!next) {
+                    diagnose(diagnostic::id::pp4_cannot_use_hash_hash_here,
+                             tok.range.first);
+                    continue;
+                }
+                auto lhs = tok, rhs = *next;
+                /* [6.10.3.3]/3
+                 concatenation of two placemarkers results in a single
+                 placemarker preprocessing token, and concatenation of
+                 a placemarker with a non-placemarker preprocessing token
+                 results in the non-placemarker preprocessing token
+                */
+                if (lhs.is(token::placemarker) && rhs.is(token::placemarker)) {
+                    result.push_back(lhs);
+                    continue;
+                } else if (lhs.is(token::placemarker)) {
+                    result.push_back(rhs);
+                    continue;
+                } else if (rhs.is(token::placemarker)) {
+                    result.push_back(lhs);
+                    continue;
+                }
+                /* [6.10.3.3]/3
+                 the preceding preprocessing token is concatenated
+                 with the following preprocessing token
+                */
+                std::string data;
+                data += lhs.spelling.to_string();
+                data += rhs.spelling.to_string();
+                auto buf = std::make_unique<raw_buffer>("<concatenated>",
+                                                        data);
+                auto tokens = perform_phase_three(*buf);
+                extra_buffers.push_back(std::move(buf));
+                if (tokens.size() != 1) {
+                    diagnose(diagnostic::id::pp4_concatenate_invalid_token,
+                             op.range.first);
+                    continue;
+                }
+                result.push_back(tokens[0]);
+            } else {
+                result.push_back(tok);
+            }
+        }
+    }
+    unhijack();
+    return result;
 }
 
 void p4m::hijack() {
