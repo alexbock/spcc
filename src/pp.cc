@@ -421,7 +421,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         for (auto& arg : args) {
             hijack();
             tokens = std::move(arg);
-            std::vector<token> expansion = macro_expand_hijacked_tokens();
+            std::vector<token> expansion = process(true);
             unhijack();
             arg = std::move(expansion);
             for (auto& tok : arg) {
@@ -526,42 +526,6 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
     }
 }
 
-std::vector<token> p4m::macro_expand_hijacked_tokens() {
-    std::vector<token> expansion;
-    std::map<string_view, std::size_t> exp_end;
-    while (peek(TAKE, TAKE)) {
-        for (auto it = exp_end.begin(); it != exp_end.end();) {
-            if (it->second <= *find(TAKE, TAKE)) {
-                macros.find(it->first)->second.being_replaced = false;
-                it = exp_end.erase(it);
-            } else ++it;
-        }
-        auto old_index = index;
-        auto invocation_start = tokens.begin() + index;
-        auto old_id = peek(SKIP, SKIP);
-        if (auto exp = maybe_expand_macro()) {
-            auto invocation_end = tokens.begin() + index;
-            tokens.erase(invocation_start, invocation_end);
-            tokens.insert(invocation_start, exp->begin(), exp->end());
-            index = old_index;
-            for (auto& pair : exp_end) {
-                pair.second += exp->size();
-                pair.second -= (invocation_end - invocation_start);
-            }
-            assert(old_id->is(token::identifier));
-            auto& mac = macros.find(old_id->spelling)->second;
-            mac.being_replaced = true;
-            exp_end[mac.name] = index + exp->size();
-        } else {
-            expansion.push_back(*get(TAKE, TAKE));
-        }
-    }
-    for (auto pair : exp_end) {
-        macros.find(pair.first)->second.being_replaced = false;
-    }
-    return expansion;
-}
-
 std::vector<token> p4m::handle_concatenation(std::vector<token> in) {
     std::vector<token> result;
     hijack();
@@ -641,14 +605,16 @@ token p4m::make_placemarker() {
 }
 
 void p4m::hijack() {
-    saved_states.push_back({ std::move(tokens), index });
+    saved_states.push_back({ std::move(tokens), std::move(out), index });
     index = 0;
     tokens.clear();
+    out.clear();
 }
 
 void p4m::unhijack() {
     assert(!saved_states.empty());
     tokens = std::move(saved_states.back().tokens);
+    out = std::move(saved_states.back().out);
     index = saved_states.back().index;
     saved_states.pop_back();
 }
@@ -777,8 +743,8 @@ void p4m::handle_undef_directive() {
     finish_directive_line(undef_tok);
 }
 
-std::vector<token> p4m::process() {
-    bool allow_directive = true;
+std::vector<token> p4m::process(bool in_arg) {
+    bool allow_directive = !in_arg;
     std::map<string_view, std::size_t> exp_end;
     while (index < tokens.size()) {
         auto next = *peek(TAKE, TAKE);
@@ -830,6 +796,9 @@ std::vector<token> p4m::process() {
                 out.push_back(*get(TAKE, TAKE));
             }
         }
+    }
+    for (auto pair : exp_end) {
+        macros.find(pair.first)->second.being_replaced = false;
     }
     return std::move(out);
 }

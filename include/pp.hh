@@ -63,7 +63,7 @@ namespace pp {
                                                               "$\n");
         }
 
-        std::vector<token> process();
+        std::vector<token> process(bool in_arg = false);
     private:
         enum ws_mode {
             SKIP,
@@ -86,7 +86,6 @@ namespace pp {
 
         void maybe_diagnose_macro_redefinition(const macro& def) const;
         optional<std::vector<token>> maybe_expand_macro();
-        std::vector<token> macro_expand_hijacked_tokens();
         std::vector<token> handle_concatenation(std::vector<token> in);
         void remove_placemarkers(std::vector<token>& v);
         token make_placemarker();
@@ -103,6 +102,7 @@ namespace pp {
 
         struct saved_state {
             std::vector<token> tokens;
+            std::vector<token> out;
             std::size_t index;
         };
         std::vector<saved_state> saved_states;
