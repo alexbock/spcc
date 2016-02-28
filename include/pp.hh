@@ -47,6 +47,7 @@ namespace pp {
         string_view name;
         location loc;
         std::vector<token> body;
+        bool predefined = false;
         bool being_replaced = false;
 
         std::vector<string_view> param_names;
@@ -61,6 +62,7 @@ namespace pp {
         buf(std::move(buf)), tokens(std::move(tokens)) {
             placemarker_buffer = std::make_unique<raw_buffer>("<placemarker>",
                                                               "$\n");
+            add_predefined_macros();
         }
 
         std::vector<token> process(bool in_arg = false);
@@ -92,6 +94,10 @@ namespace pp {
         token make_placemarker();
         void hijack();
         void unhijack();
+        void add_predefined_macros();
+        void make_predefined_macro(std::string name, std::string body);
+        token make_file_token(token at);
+        token make_line_token(token at);
 
         std::unique_ptr<buffer> buf;
         std::vector<token> tokens;

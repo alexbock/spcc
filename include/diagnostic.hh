@@ -43,6 +43,8 @@ namespace diagnostic {
         pp4_stringize_invalid_token,
         pp4_stringize_no_parameter,
         pp4_concatenate_invalid_token,
+        pp4_cannot_use_predef_macro_here,
+        pp4_predef_expand_failure,
         aux_previous_def,
         aux_previous_use,
         aux_expanded_here,
@@ -82,6 +84,8 @@ namespace diagnostic {
 
     void emit_diagnostic(const info&, optional<location>,
                          const std::string& msg);
+
+    std::pair<std::size_t, std::size_t> compute_line_col(location loc);
 
     template<typename... T>
     void diagnose(id diag, optional<location> loc, T... t) {

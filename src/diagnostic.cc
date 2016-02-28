@@ -217,6 +217,22 @@ namespace diagnostic {
             }
         },
         {
+            id::pp4_cannot_use_predef_macro_here,
+            {
+                "cannot use predefined macro name '%%' here",
+                "[6.10.8]/2",
+                category::error
+            }
+        },
+        {
+            id::pp4_predef_expand_failure,
+            {
+                "failed to expand dynamic predefined macro '%%'",
+                {},
+                category::error
+            }
+        },
+        {
             id::aux_previous_def,
             {
                 "previous definition is here",

@@ -524,6 +524,11 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         remove_placemarkers(expansion);
         return expansion;
     } else {
+        if (mac.predefined && mac.name == "__FILE__") {
+            return std::vector<token>{ make_file_token(*next) };
+        } else if (mac.predefined && mac.name == "__LINE__") {
+            return std::vector<token>{ make_line_token(*next) };
+        }
         std::vector<token> expansion = handle_concatenation(mac.body);
         remove_placemarkers(expansion);
         for (auto& arg : expansion) {
@@ -631,10 +636,65 @@ void p4m::unhijack() {
     saved_states.pop_back();
 }
 
+void p4m::add_predefined_macros() {
+    make_predefined_macro("__DATE__", "\"Jan  1 1970\"");
+    make_predefined_macro("__FILE__", "\"(dynamic)\"");
+    make_predefined_macro("__LINE__", "\"(dynamic)\"");
+    make_predefined_macro("__STDC__", "1");
+    make_predefined_macro("__STDC_HOSTED__", "0");
+    make_predefined_macro("__STDC_VERSION__", "201112L");
+    make_predefined_macro("__TIME__", "\"11:11:11\"");
+}
+
+void p4m::make_predefined_macro(std::string name, std::string body) {
+    auto buf = std::make_unique<raw_buffer>("<predefined>",
+                                            body + "\n");
+    auto tokens = perform_phase_three(*buf);
+    extra_buffers.push_back(std::move(buf));
+    buf = std::make_unique<raw_buffer>("<predefined>", name + "\n");
+    location loc{*buf, 0};
+    macro mac = {
+        buf->data().substr(0, name.size()), loc,
+        std::move(tokens), true
+    };
+    extra_buffers.push_back(std::move(buf));
+    auto macro_name = mac.name;
+    macros.insert({ macro_name, std::move(mac) });
+}
+
+token p4m::make_file_token(token at) {
+    auto name = at.range.first.buffer().name().to_string();
+    name = "\"" + name + "\"";
+    auto buf = std::make_unique<raw_buffer>("<predefined>",
+                                            name);
+    auto tokens = perform_phase_three(*buf);
+    if (tokens.size() != 1) {
+        diagnose(diagnostic::id::pp4_predef_expand_failure,
+                 at.range.first, at.spelling);
+        return at;
+    }
+    extra_buffers.push_back(std::move(buf));
+    return tokens[0];
+}
+
+token p4m::make_line_token(token at) {
+    auto line_col = diagnostic::compute_line_col(at.range.first);
+    auto line = std::to_string(line_col.first + 1);
+    auto buf = std::make_unique<raw_buffer>("<predefined>",
+                                            line);
+    auto tokens = perform_phase_three(*buf);
+    if (tokens.size() != 1) {
+        diagnose(diagnostic::id::pp4_predef_expand_failure,
+                 at.range.first, at.spelling);
+        return at;
+    }
+    extra_buffers.push_back(std::move(buf));
+    return tokens[0];
+}
+
 void p4m::handle_null_directive() {
     assert(get(SKIP, TAKE)->is(token::newline));
 }
-
 
 void p4m::handle_error_directive() {
     auto error_tok = *get(SKIP, STOP);
@@ -737,6 +797,14 @@ void p4m::handle_define_directive() {
         }
     }
     mac.body = finish_line();
+    auto it = macros.find(mac.name);
+    if (it != macros.end()) {
+        if (it->second.predefined) {
+            diagnose(diagnostic::id::pp4_cannot_use_predef_macro_here,
+                     loc, it->second.name);
+            return;
+        }
+    }
     maybe_diagnose_macro_redefinition(mac);
     macros.insert({ mac.name, std::move(mac) });
 }
@@ -749,6 +817,15 @@ void p4m::handle_undef_directive() {
         diagnose(diagnostic::id::pp4_expected_macro_name, loc);
         (void)finish_line();
         return;
+    }
+    auto it = macros.find(name->spelling);
+    if (it != macros.end()) {
+        if (it->second.predefined) {
+            diagnose(diagnostic::id::pp4_cannot_use_predef_macro_here,
+                     loc, it->second.name);
+            finish_line();
+            return;
+        }
     }
     macros.erase(name->spelling);
     finish_directive_line(undef_tok);
@@ -796,8 +873,11 @@ std::vector<token> p4m::process(bool in_arg) {
     while (index < tokens.size()) {
         auto next = *peek(TAKE, TAKE);
         if (next.is(token::newline)) {
-            out.push_back(*get(SKIP, TAKE));
+            out.push_back(*get(STOP, TAKE));
             allow_directive = true;
+            continue;
+        } else if (next.is(token::space)) {
+            out.push_back(*get(TAKE, STOP));
             continue;
         } else if (next.is(punctuator::hash) && allow_directive) {
             (void)get(SKIP, TAKE);
