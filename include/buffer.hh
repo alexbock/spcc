@@ -23,11 +23,28 @@ class location {
 public:
     location(const buffer& buf, std::size_t offset) :
     buf_(&buf), offset_(offset) { }
+    location(const location& other) {
+        operator=(other);
+    }
+    location& operator=(const location& other) {
+        buf_ = other.buf_;
+        offset_ = other.offset_;
+        if (other.expanded_from) {
+            expanded_from = std::make_unique<location>(*other.expanded_from);
+        }
+        return *this;
+    }
+    location(location&&) = default;
+    location& operator=(location&&) = default;
 
     const buffer& buffer() const { return *buf_; }
     std::size_t offset() const { return offset_; }
     location find_spelling_loc() const;
     location next_loc(std::size_t n = 1) { return { buffer(), offset() + n }; }
+
+    void add_expansion_entry(location loc);
+
+    std::unique_ptr<location> expanded_from;
 private:
     const class buffer* buf_;
     std::size_t offset_;

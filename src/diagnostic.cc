@@ -232,6 +232,14 @@ namespace diagnostic {
                 category::auxiliary
             }
         },
+        {
+            id::aux_expanded_here,
+            {
+                "expanded from here",
+                {},
+                category::auxiliary
+            }
+        },
     };
 
     const info& find(id diag) {
@@ -352,6 +360,7 @@ namespace diagnostic {
     void emit_diagnostic(const info& info,
                          optional<location> loc,
                          const std::string& msg) {
+        auto original_loc = loc;
         update_exit_code(info.category);
         if (loc) loc = loc->find_spelling_loc();
         if (loc) emit_file_line_col(*loc);
@@ -363,5 +372,9 @@ namespace diagnostic {
         }
         std::cout << "\n";
         if (loc) emit_snippet_caret(*loc);
+
+        if (original_loc && original_loc->expanded_from) {
+            diagnose(id::aux_expanded_here, *original_loc->expanded_from);
+        }
     }
 }

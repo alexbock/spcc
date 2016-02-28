@@ -45,6 +45,7 @@ namespace diagnostic {
         pp4_concatenate_invalid_token,
         aux_previous_def,
         aux_previous_use,
+        aux_expanded_here,
     };
 
     struct info {

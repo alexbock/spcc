@@ -442,7 +442,10 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             auto tok = *otok;
             if (tok.is(token::identifier)) {
                 if (auto index = get_arg(tok.spelling)) {
-                    auto& arg = args[*index];
+                    auto arg = args[*index];
+                    for (auto& arg_tok : arg) {
+                        arg_tok.range.first.add_expansion_entry(tok.range.first);
+                    }
                     expansion.insert(expansion.end(),
                                      arg.begin(), arg.end());
                     if (arg.empty()) {
@@ -513,6 +516,9 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
     } else {
         std::vector<token> expansion = handle_concatenation(mac.body);
         remove_placemarkers(expansion);
+        for (auto& arg : expansion) {
+            arg.range.first.add_expansion_entry(loc);
+        }
         return expansion;
     }
 }
