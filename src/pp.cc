@@ -451,9 +451,18 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                 // TODO need to preserve whitespace up until this point
                 std::string data;
                 for (auto tok : arg) {
-                    // TODO escape strings and chars
+                    bool needs_escape = false;
+                    needs_escape |= tok.is(token::string_literal);
+                    needs_escape |= tok.is(token::character_constant);
                     if (tok.is(token::space)) data += " ";
-                    else data += tok.spelling.to_string();
+                    else if (!needs_escape) data += tok.spelling.to_string();
+                    else {
+                        for (char c : tok.spelling) {
+                            if (c == '"') data += "\\\"";
+                            else if (c == '\\') data += "\\\\";
+                            else data += c;
+                        }
+                    }
                 }
                 data = util::ltrim(util::rtrim(data));
                 data = "\"" + data + "\"";
