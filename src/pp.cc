@@ -548,31 +548,36 @@ std::vector<token> p4m::handle_concatenation(std::vector<token> in) {
                 */
                 if (lhs.is(token::placemarker) && rhs.is(token::placemarker)) {
                     result.push_back(lhs);
-                    continue;
                 } else if (lhs.is(token::placemarker)) {
                     result.push_back(rhs);
-                    continue;
                 } else if (rhs.is(token::placemarker)) {
                     result.push_back(lhs);
-                    continue;
+                } else {
+                    /* [6.10.3.3]/3
+                     the preceding preprocessing token is concatenated
+                     with the following preprocessing token
+                    */
+                    std::string data;
+                    data += lhs.spelling.to_string();
+                    data += rhs.spelling.to_string();
+                    auto buf = std::make_unique<raw_buffer>("<concatenated>",
+                                                            data);
+                    auto tokens = perform_phase_three(*buf);
+                    extra_buffers.push_back(std::move(buf));
+                    if (tokens.size() != 1) {
+                        diagnose(diagnostic::id::pp4_concatenate_invalid_token,
+                                 op.range.first);
+                        continue;
+                    }
+                    if (tokens[0].is(punctuator::hash_hash)) {
+                        tokens[0].blue = true;
+                    }
+                    result.push_back(tokens[0]);
                 }
-                /* [6.10.3.3]/3
-                 the preceding preprocessing token is concatenated
-                 with the following preprocessing token
-                */
-                std::string data;
-                data += lhs.spelling.to_string();
-                data += rhs.spelling.to_string();
-                auto buf = std::make_unique<raw_buffer>("<concatenated>",
-                                                        data);
-                auto tokens = perform_phase_three(*buf);
-                extra_buffers.push_back(std::move(buf));
-                if (tokens.size() != 1) {
-                    diagnose(diagnostic::id::pp4_concatenate_invalid_token,
-                             op.range.first);
-                    continue;
-                }
-                result.push_back(tokens[0]);
+                result.insert(result.end(), tokens.begin() + index,
+                              tokens.end());
+                result = handle_concatenation(std::move(result));
+                break;
             } else {
                 result.push_back(tok);
             }
