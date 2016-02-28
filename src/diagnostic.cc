@@ -165,6 +165,41 @@ namespace diagnostic {
             }
         },
         {
+            id::pp4_missing_macro_args_end,
+            {
+                "expected right parenthesis to terminate function-like "
+                "macro invocation",
+                "[6.10.3]",
+                category::error
+            }
+        },
+        {
+            id::pp4_wrong_arity_macro_args,
+            {
+                "function-like macro '%%' requires %% arguments, but "
+                "%% were provided",
+                "[6.10.3]",
+                category::error
+            }
+        },
+        {
+            id::pp4_cannot_use_hash_hash_here,
+            {
+                "## cannot be used here",
+                "[6.10.3.3]",
+                category::error
+            }
+        },
+        {
+            id::pp4_stringize_invalid_token,
+            {
+                "use of # operator did not produce a valid "
+                "character string literal",
+                "[6.10.3.2]/2",
+                category::error
+            }
+        },
+        {
             id::aux_previous_def,
             {
                 "previous definition is here",

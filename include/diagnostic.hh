@@ -37,6 +37,10 @@ namespace diagnostic {
         pp4_unexpected_macro_param,
         pp4_missing_macro_space,
         pp4_missing_macro_right_paren,
+        pp4_missing_macro_args_end,
+        pp4_wrong_arity_macro_args,
+        pp4_cannot_use_hash_hash_here,
+        pp4_stringize_invalid_token,
         aux_previous_def,
         aux_previous_use,
     };

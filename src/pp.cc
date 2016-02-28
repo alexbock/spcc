@@ -335,6 +335,7 @@ void p4m::maybe_diagnose_macro_redefinition(const macro& def) const {
 optional<std::vector<token>> p4m::maybe_expand_macro() {
     auto next = peek(SKIP, SKIP);
     if (!next || !next->is(token::identifier) || next->blue) return {};
+    auto loc = next->range.first;
     auto it = macros.find(next->spelling);
     if (it == macros.end()) return {};
     auto& mac = it->second;
@@ -342,28 +343,166 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         tokens[*find(SKIP, SKIP)].blue = true;
         return {};
     }
+    next = get(SKIP, SKIP);
     if (mac.function_like) {
-        // TODO
-        assert(false);
-    } else {
+        auto lparen = peek(SKIP, SKIP);
+        if (!lparen->is(punctuator::paren_left)) {
+            return std::vector<token>{*next};
+        }
         get(SKIP, SKIP);
-        mac.being_replaced = true;
-        std::vector<token> expansion;
-        hijack();
-        tokens = mac.body;
-        while (peek(SKIP, SKIP)) {
-            auto result = maybe_expand_macro();
-            if (result) {
-                expansion.insert(expansion.end(),
-                                 result->begin(), result->end());
+        // collect arguments
+        std::vector<std::vector<token>> args;
+        std::vector<token> arg;
+        std::size_t inner_parens = 0;
+        bool done = false;
+        for (auto tok = get(SKIP, SKIP); tok; tok = get(SKIP, SKIP)) {
+            if (tok->is(punctuator::paren_right) && inner_parens) {
+                --inner_parens;
+            } else if (tok->is(punctuator::paren_left)) {
+                ++inner_parens;
+            } else if (tok->is(punctuator::paren_right)) {
+                done = true;
+                args.push_back(std::move(arg));
+                arg.clear();
+                break;
+            } else if (tok->is(punctuator::comma) && !inner_parens) {
+                args.push_back(std::move(arg));
+                arg.clear();
             } else {
-                expansion.push_back(*get(SKIP, SKIP));
+                arg.push_back(*tok);
             }
         }
+        if (!done) {
+            diagnose(diagnostic::id::pp4_missing_macro_args_end, loc);
+            return std::vector<token>{};
+        } else if (args.size() < mac.param_names.size()) {
+            const auto diff = mac.param_names.size() - args.size();
+            std::string req = std::to_string(mac.param_names.size());
+            if (mac.variadic) req = " at least " + req;
+            diagnose(diagnostic::id::pp4_wrong_arity_macro_args, loc,
+                     mac.name, req, std::to_string(args.size()));
+            // recover
+            for (std::size_t i = 0; i < diff; ++i) {
+                args.emplace_back();
+            }
+        } else if (args.size() > mac.param_names.size() && !mac.variadic) {
+            const auto diff = args.size() - mac.param_names.size();
+            std::string req = std::to_string(mac.param_names.size());
+            if (mac.variadic) req = " at least " + req;
+            diagnose(diagnostic::id::pp4_wrong_arity_macro_args, loc,
+                     mac.name, req, std::to_string(args.size()));
+            // recover
+            for (std::size_t i = 0; i < diff; ++i) {
+                args.pop_back();
+            }
+        }
+        // TODO diagnose UB for apparent directives in macro args [6.10.3]/11
+
+        // expand each argument
+        for (auto& arg : args) {
+            hijack();
+            tokens = std::move(arg);
+            std::vector<token> expansion = macro_expand_hijacked_tokens();
+            unhijack();
+            arg = std::move(expansion);
+        }
+        // replace parameter names and handle #/##
+        auto get_arg = [&](string_view name) -> optional<std::size_t> {
+            for (std::size_t i = 0; i < mac.param_names.size(); ++i) {
+                if (mac.param_names[i] == name) return i;
+            }
+            return {};
+        };
+        std::vector<token> expansion;
+        for (std::size_t i = 0; i < mac.body.size(); ++i) {
+            auto tok = mac.body[i];
+            if (i + 1 < mac.body.size()) {
+                if (mac.body[i + 1].is(punctuator::hash_hash)) {
+                    // TODO
+                }
+            }
+            if (tok.is(token::identifier)) {
+                if (auto index = get_arg(tok.spelling)) {
+                    auto& arg = args[*index];
+                    expansion.insert(expansion.end(),
+                                     arg.begin(), arg.end());
+                    continue;
+                } else if (tok.spelling == "__VA_ARGS__") {
+                    // TODO
+                    diagnose(diagnostic::id::not_yet_implemented,
+                             tok.range.first, "__VA_ARGS__");
+                }
+            } else if (tok.is(punctuator::hash_hash)) {
+                // TODO complain hash at beginning
+            } else if (tok.is(punctuator::hash)) {
+                optional<std::size_t> index;
+                if (i + 1 < mac.body.size()) {
+                    auto next = mac.body[i + 1];
+                    if (next.is(token::identifier)) {
+                        index = get_arg(next.spelling);
+                    }
+                }
+                if (!index) {
+                    // TODO complain
+                    continue;
+                }
+                auto& arg = args[*index];
+                // TODO need to preserve whitespace up until this point
+                // TODO stringize
+                std::string data;
+                for (auto tok : arg) {
+                    // TODO escape strings and chars
+                    if (tok.is(token::space)) data += " ";
+                    else data += tok.spelling.to_string();
+                }
+                data = util::ltrim(util::rtrim(data));
+                data = "\"" + data + "\"";
+                auto buf = std::make_unique<raw_buffer>("<stringize>", data);
+                auto tokens = perform_phase_three(*buf);
+                extra_buffers.push_back(std::move(buf));
+                if (tokens.size() != 1) {
+                    diagnose(diagnostic::id::pp4_stringize_invalid_token,
+                             tok.range.first);
+                } else {
+                    expansion.push_back(tokens[0]);
+                    ++i;
+                    continue;
+                }
+            }
+            expansion.push_back(tok);
+        }
+        // rescan
+        mac.being_replaced = true;
+        hijack();
+        tokens = std::move(expansion);
+        expansion = macro_expand_hijacked_tokens();
+        unhijack();
+        mac.being_replaced = false;
+
+        return expansion;
+    } else {
+        mac.being_replaced = true;
+        hijack();
+        tokens = mac.body;
+        std::vector<token> expansion = macro_expand_hijacked_tokens();
         unhijack();
         mac.being_replaced = false;
         return expansion;
     }
+}
+
+std::vector<token> p4m::macro_expand_hijacked_tokens() {
+    std::vector<token> expansion;
+    while (peek(SKIP, SKIP)) {
+        auto result = maybe_expand_macro();
+        if (result) {
+            expansion.insert(expansion.end(),
+                             result->begin(), result->end());
+        } else {
+            expansion.push_back(*get(SKIP, SKIP));
+        }
+    }
+    return expansion;
 }
 
 void p4m::hijack() {
@@ -429,6 +568,7 @@ void p4m::handle_define_directive() {
     macro mac{name->spelling, name->range.first};
     if (peek(STOP, STOP) && peek(STOP, STOP)->is(punctuator::paren_left)) {
         (void)get(STOP, STOP);
+        mac.function_like = true;
         // parse the parameter list
         bool allow_comma = false; // after a parameter other than ellipsis
         bool allow_param = true; // at the beginning or after a comma

@@ -82,6 +82,7 @@ namespace pp {
 
         void maybe_diagnose_macro_redefinition(const macro& def) const;
         optional<std::vector<token>> maybe_expand_macro();
+        std::vector<token> macro_expand_hijacked_tokens();
         void hijack();
         void unhijack();
 
@@ -89,6 +90,7 @@ namespace pp {
         std::vector<token> tokens;
         std::vector<token> out;
         std::map<string_view, macro> macros;
+        std::vector<std::unique_ptr<buffer>> extra_buffers;
         std::size_t index = 0;
 
         struct saved_state {
