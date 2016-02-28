@@ -118,7 +118,7 @@ namespace diagnostic {
         {
             id::pp4_extra_after_directive,
             {
-                "extra tokens after %% directive",
+                "extra tokens after #%% directive",
                 "[6.10]",
                 category::error
             }

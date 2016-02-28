@@ -82,6 +82,7 @@ namespace pp {
         void handle_pragma_directive();
         void handle_line_directive();
         void handle_define_directive();
+        void handle_undef_directive();
 
         void maybe_diagnose_macro_redefinition(const macro& def) const;
         optional<std::vector<token>> maybe_expand_macro();

@@ -737,6 +737,19 @@ void p4m::handle_define_directive() {
     macros.insert({ mac.name, std::move(mac) });
 }
 
+void p4m::handle_undef_directive() {
+    auto undef_tok = *get(SKIP, STOP);
+    const auto loc = undef_tok.range.first;
+    auto name = get(SKIP, STOP);
+    if (!name || !name->is(token::identifier)) {
+        diagnose(diagnostic::id::pp4_expected_macro_name, loc);
+        (void)finish_line();
+        return;
+    }
+    macros.erase(name->spelling);
+    finish_directive_line(undef_tok);
+}
+
 std::vector<token> p4m::process() {
     bool allow_directive = true;
     while (index < tokens.size()) {
@@ -758,6 +771,8 @@ std::vector<token> p4m::process() {
                 handle_line_directive();
             } else if (id->spelling == "define") {
                 handle_define_directive();
+            } else if (id->spelling == "undef") {
+                handle_undef_directive();
             }
         } else {
             allow_directive = false;
