@@ -58,7 +58,10 @@ namespace pp {
     public:
         phase_four_manager(std::unique_ptr<buffer> buf,
                            std::vector<token> tokens) :
-        buf(std::move(buf)), tokens(std::move(tokens)) { }
+        buf(std::move(buf)), tokens(std::move(tokens)) {
+            placemarker_buffer = std::make_unique<raw_buffer>("<placemarker>",
+                                                              "$\n");
+        }
 
         std::vector<token> process();
     private:
@@ -84,6 +87,8 @@ namespace pp {
         optional<std::vector<token>> maybe_expand_macro();
         std::vector<token> macro_expand_hijacked_tokens();
         std::vector<token> handle_concatenation(std::vector<token> in);
+        void remove_placemarkers(std::vector<token>& v);
+        token make_placemarker();
         void hijack();
         void unhijack();
 
@@ -92,6 +97,7 @@ namespace pp {
         std::vector<token> out;
         std::map<string_view, macro> macros;
         std::vector<std::unique_ptr<buffer>> extra_buffers;
+        std::unique_ptr<raw_buffer> placemarker_buffer;
         std::size_t index = 0;
 
         struct saved_state {

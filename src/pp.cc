@@ -346,7 +346,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
     next = get(SKIP, SKIP);
     if (mac.function_like) {
         auto lparen = peek(SKIP, SKIP);
-        if (!lparen->is(punctuator::paren_left)) {
+        if (!lparen || !lparen->is(punctuator::paren_left)) {
             return std::vector<token>{*next};
         }
         get(SKIP, SKIP);
@@ -429,6 +429,11 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                     auto& arg = args[*index];
                     expansion.insert(expansion.end(),
                                      arg.begin(), arg.end());
+                    if (arg.empty()) {
+                        // TODO is it visible to the user if we do this
+                        // even if this parameter isn't an argument to ##?
+                        expansion.push_back(make_placemarker());
+                    }
                     continue;
                 } else if (tok.spelling == "__VA_ARGS__") {
                     // TODO
@@ -483,7 +488,8 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         // rescan
         mac.being_replaced = true;
         hijack();
-        tokens = std::move(expansion);
+        tokens = handle_concatenation(std::move(expansion));
+        remove_placemarkers(tokens);
         expansion = macro_expand_hijacked_tokens();
         unhijack();
         mac.being_replaced = false;
@@ -493,6 +499,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         mac.being_replaced = true;
         hijack();
         tokens = handle_concatenation(mac.body);
+        remove_placemarkers(tokens);
         std::vector<token> expansion = macro_expand_hijacked_tokens();
         unhijack();
         mac.being_replaced = false;
@@ -577,6 +584,19 @@ std::vector<token> p4m::handle_concatenation(std::vector<token> in) {
     }
     unhijack();
     return result;
+}
+
+void p4m::remove_placemarkers(std::vector<token>& v) {
+    v.erase(std::remove_if(v.begin(), v.end(), [](token tok) {
+        return tok.kind == token::placemarker;
+    }), v.end());
+}
+
+token p4m::make_placemarker() {
+    auto spelling = placemarker_buffer->data().substr(0, 1);
+    location loc{*placemarker_buffer, 0};
+    std::pair<location, location> range{loc, loc.next_loc()};
+    return token(token::placemarker, spelling, range);
 }
 
 void p4m::hijack() {
