@@ -4,7 +4,6 @@
 #include "util.hh"
 #include "optional.hh"
 
-#include <iostream>
 #include <algorithm>
 #include <cassert>
 #include <map>
@@ -345,7 +344,6 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         tokens[*find(SKIP, SKIP)].blue = true;
         return {};
     }
-    //std::cout << "expanding macro " << next->spelling << "\n";
     const auto pre_name_index = index;
     next = get(SKIP, SKIP);
     if (mac.function_like) {
@@ -509,19 +507,12 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             expansion.push_back(tok);
         }
         unhijack();
-        hijack();
-        tokens = handle_concatenation(std::move(expansion));
-        remove_placemarkers(tokens);
-        expansion = tokens;
-        unhijack();
-
+        expansion = handle_concatenation(std::move(expansion));
+        remove_placemarkers(expansion);
         return expansion;
     } else {
-        hijack();
-        tokens = handle_concatenation(mac.body);
-        remove_placemarkers(tokens);
-        std::vector<token> expansion = tokens;
-        unhijack();
+        std::vector<token> expansion = handle_concatenation(mac.body);
+        remove_placemarkers(expansion);
         return expansion;
     }
 }
