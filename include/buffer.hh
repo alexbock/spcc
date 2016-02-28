@@ -16,6 +16,7 @@ public:
     virtual const buffer* parent() const = 0;
     virtual string_view original_data() const = 0;
     virtual std::size_t offset_in_original(std::size_t offset) const = 0;
+    virtual optional<class location> included_at() const = 0;
     virtual ~buffer() { }
 };
 
@@ -62,9 +63,15 @@ public:
     std::size_t offset_in_original(std::size_t offset) const override {
         return offset;
     }
+    optional<class location> included_at() const override {
+        return included_at_;
+    }
+
+    void mark_included_at(location loc) { included_at_ = loc; }
 private:
     std::string name_;
     std::string data_;
+    optional<location> included_at_;
 };
 
 class derived_buffer : public buffer {
@@ -79,6 +86,7 @@ public:
         return parent_->original_data();
     };
     std::size_t offset_in_original(std::size_t offset) const override;
+    optional<class location> included_at() const override { return {}; }
 
     string_view peek() const;
     void propagate(std::size_t len);

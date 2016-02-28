@@ -46,6 +46,8 @@ namespace diagnostic {
         aux_previous_def,
         aux_previous_use,
         aux_expanded_here,
+        aux_included_here,
+        aux_macro_defined_here,
     };
 
     struct info {
@@ -78,7 +80,8 @@ namespace diagnostic {
         return format_diagnostic_message(pattern, std::move(args));
     }
 
-    void emit_diagnostic(const info&, optional<location>, const std::string& msg);
+    void emit_diagnostic(const info&, optional<location>,
+                         const std::string& msg);
 
     template<typename... T>
     void diagnose(id diag, optional<location> loc, T... t) {

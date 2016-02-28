@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <cassert>
+#include <fstream>
+#include <sstream>
 #include <map>
 
 using diagnostic::diagnose;
@@ -392,12 +394,17 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             diagnose(diagnostic::id::pp4_missing_macro_args_end, loc);
             return std::vector<token>{};
         } else if (args.size() < mac.param_names.size()) {
-            // TODO fix grammar of was/were for these two checks
+            // TODO combine the code for two the argument count checks
             const auto diff = mac.param_names.size() - args.size();
             std::string req = std::to_string(mac.param_names.size());
             if (mac.variadic) req = " at least " + req;
             diagnose(diagnostic::id::pp4_wrong_arity_macro_args, loc,
-                     mac.name, req, std::to_string(args.size()));
+                     mac.name, req,
+                     mac.param_names.size() == 1 ? "" : "s",
+                     std::to_string(args.size()),
+                     args.size() == 1 ? "was" : "were");
+            diagnose(diagnostic::id::aux_macro_defined_here,
+                     mac.loc, mac.name);
             // recover
             for (std::size_t i = 0; i < diff; ++i) {
                 args.emplace_back();
@@ -407,7 +414,10 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             std::string req = std::to_string(mac.param_names.size());
             if (mac.variadic) req = " at least " + req;
             diagnose(diagnostic::id::pp4_wrong_arity_macro_args, loc,
-                     mac.name, req, std::to_string(args.size()));
+                     mac.name, req,
+                     mac.param_names.size() == 1 ? "" : "s",
+                     std::to_string(args.size()),
+                     args.size() == 1 ? "was" : "were");
             // recover
             for (std::size_t i = 0; i < diff; ++i) {
                 args.pop_back();
@@ -630,12 +640,11 @@ void p4m::handle_error_directive() {
     auto error_tok = *get(SKIP, STOP);
     auto tokens = finish_line();
     std::string msg;
-    std::string delim;
     for (auto tok : tokens) {
-        msg += delim;
-        delim = " ";
-        msg += tok.spelling.to_string();
+        if (tok.is(token::space)) msg += " ";
+        else msg += tok.spelling.to_string();
     }
+    msg = util::ltrim(util::rtrim(msg));
     const auto loc = error_tok.range.first;
     diagnose(diagnostic::id::pp4_error_directive, loc, msg);
 }
@@ -745,13 +754,49 @@ void p4m::handle_undef_directive() {
     finish_directive_line(undef_tok);
 }
 
+void p4m::handle_include_directive() {
+    auto include_tok = *get(SKIP, STOP);
+    const auto loc = include_tok.range.first;
+    if (peek(SKIP, STOP) && peek(SKIP, STOP)->is(token::header_name)) {
+        auto hn = get(SKIP, STOP);
+        finish_directive_line(include_tok);
+        auto fname = hn->spelling.substr(1, hn->spelling.size() - 2);
+        std::ifstream file{fname.to_string()};
+        if (!file.good()) {
+            diagnose(diagnostic::id::cannot_open_file, {}, fname);
+            return;
+        }
+        std::stringstream ss;
+        ss << file.rdbuf();
+        auto data = ss.str();
+        ss.clear();
+
+        auto buf = std::make_unique<raw_buffer>(fname.to_string(), data);
+        buf->mark_included_at(include_tok.range.first);
+        auto post_p1 = pp::perform_phase_one(std::move(buf));
+        auto post_p2 = pp::perform_phase_two(std::move(post_p1));
+        auto tokens = pp::perform_phase_three(*post_p2);
+        extra_buffers.push_back(std::move(post_p2));
+        hijack();
+        this->tokens = std::move(tokens);
+        auto included_tokens = process();
+        unhijack();
+        out.insert(out.end(), included_tokens.begin(), included_tokens.end());
+    } else {
+        // TODO support expansion here
+        diagnose(diagnostic::id::not_yet_implemented, loc,
+                 "non-literal arguments for #include directive");
+        (void)finish_line();
+    }
+}
+
 std::vector<token> p4m::process(bool in_arg) {
     bool allow_directive = !in_arg;
     std::map<string_view, std::size_t> exp_end;
     while (index < tokens.size()) {
         auto next = *peek(TAKE, TAKE);
         if (next.is(token::newline)) {
-            (void)get(SKIP, TAKE);
+            out.push_back(*get(SKIP, TAKE));
             allow_directive = true;
             continue;
         } else if (next.is(punctuator::hash) && allow_directive) {
@@ -769,6 +814,8 @@ std::vector<token> p4m::process(bool in_arg) {
                 handle_define_directive();
             } else if (id->spelling == "undef") {
                 handle_undef_directive();
+            } else if (id->spelling == "include") {
+                handle_include_directive();
             }
         } else {
             allow_directive = false;

@@ -25,7 +25,7 @@ namespace pp { namespace regex {
         { "line-comment", R"(//.*\n)" },
         { "multiline-comment", R"(/\*[\s\S]*?(\*/|[/s/S]*(?!\*/)[/s/S]*\n))" },
         { "comment", "@line-comment@|@multiline-comment@" },
-        { "space", R"(@comment@| )" },
+        { "space", R"((@comment@| )+)" },
         { "newline", R"(\n)" },
         { "hex-digit", "[0-9a-fA-F]" },
         { "ucn", R"(\\u@hex-digit@{4}|\\U@hex-digit@{8})" },

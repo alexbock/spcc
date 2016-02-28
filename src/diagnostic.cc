@@ -176,8 +176,8 @@ namespace diagnostic {
         {
             id::pp4_wrong_arity_macro_args,
             {
-                "function-like macro '%%' requires %% arguments, but "
-                "%% were provided",
+                "function-like macro '%%' requires %% argument%%, but "
+                "%% %% provided",
                 "[6.10.3]",
                 category::error
             }
@@ -236,6 +236,22 @@ namespace diagnostic {
             id::aux_expanded_here,
             {
                 "expanded from here",
+                {},
+                category::auxiliary
+            }
+        },
+        {
+            id::aux_included_here,
+            {
+                "in file included here",
+                {},
+                category::auxiliary
+            }
+        },
+        {
+            id::aux_macro_defined_here,
+            {
+                "macro '%%' defined here",
                 {},
                 category::auxiliary
             }
@@ -373,6 +389,9 @@ namespace diagnostic {
         std::cout << "\n";
         if (loc) emit_snippet_caret(*loc);
 
+        if (loc && loc->buffer().included_at()) {
+            diagnose(id::aux_included_here, *loc->buffer().included_at());
+        }
         if (original_loc && original_loc->expanded_from) {
             diagnose(id::aux_expanded_here, *original_loc->expanded_from);
         }
