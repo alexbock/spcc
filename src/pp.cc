@@ -4,6 +4,7 @@
 #include "util.hh"
 #include "optional.hh"
 
+#include <iostream>
 #include <algorithm>
 #include <cassert>
 #include <map>
@@ -344,6 +345,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         tokens[*find(SKIP, SKIP)].blue = true;
         return {};
     }
+    //std::cout << "expanding macro " << next->spelling << "\n";
     const auto pre_name_index = index;
     next = get(SKIP, SKIP);
     if (mac.function_like) {
@@ -361,8 +363,10 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         for (auto tok = get(TAKE, TAKE); tok; tok = get(TAKE, TAKE)) {
             if (tok->is(punctuator::paren_right) && inner_parens) {
                 --inner_parens;
+                arg.push_back(*tok);
             } else if (tok->is(punctuator::paren_left)) {
                 ++inner_parens;
+                arg.push_back(*tok);
             } else if (tok->is(punctuator::paren_right)) {
                 done = true;
                 args.push_back(std::move(arg));
@@ -505,42 +509,55 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             expansion.push_back(tok);
         }
         unhijack();
-        // rescan
-        mac.being_replaced = true;
         hijack();
         tokens = handle_concatenation(std::move(expansion));
         remove_placemarkers(tokens);
-        expansion = macro_expand_hijacked_tokens();
+        expansion = tokens;
         unhijack();
-        mac.being_replaced = false;
 
         return expansion;
     } else {
-        mac.being_replaced = true;
         hijack();
         tokens = handle_concatenation(mac.body);
         remove_placemarkers(tokens);
-        std::vector<token> expansion = macro_expand_hijacked_tokens();
+        std::vector<token> expansion = tokens;
         unhijack();
-        mac.being_replaced = false;
         return expansion;
     }
 }
 
 std::vector<token> p4m::macro_expand_hijacked_tokens() {
     std::vector<token> expansion;
+    std::map<string_view, std::size_t> exp_end;
     while (peek(TAKE, TAKE)) {
+        for (auto it = exp_end.begin(); it != exp_end.end();) {
+            if (it->second <= *find(TAKE, TAKE)) {
+                macros.find(it->first)->second.being_replaced = false;
+                it = exp_end.erase(it);
+            } else ++it;
+        }
         auto old_index = index;
         auto invocation_start = tokens.begin() + index;
-        auto result = maybe_expand_macro();
-        if (result) {
-            tokens.erase(invocation_start, tokens.begin() + index);
-            tokens.insert(invocation_start,
-                          result->begin(), result->end());
+        auto old_id = peek(SKIP, SKIP);
+        if (auto exp = maybe_expand_macro()) {
+            auto invocation_end = tokens.begin() + index;
+            tokens.erase(invocation_start, invocation_end);
+            tokens.insert(invocation_start, exp->begin(), exp->end());
             index = old_index;
+            for (auto& pair : exp_end) {
+                pair.second += exp->size();
+                pair.second -= (invocation_end - invocation_start);
+            }
+            assert(old_id->is(token::identifier));
+            auto& mac = macros.find(old_id->spelling)->second;
+            mac.being_replaced = true;
+            exp_end[mac.name] = index + exp->size();
         } else {
             expansion.push_back(*get(TAKE, TAKE));
         }
+    }
+    for (auto pair : exp_end) {
+        macros.find(pair.first)->second.being_replaced = false;
     }
     return expansion;
 }
@@ -762,8 +779,9 @@ void p4m::handle_undef_directive() {
 
 std::vector<token> p4m::process() {
     bool allow_directive = true;
+    std::map<string_view, std::size_t> exp_end;
     while (index < tokens.size()) {
-        auto next = *peek(SKIP, TAKE);
+        auto next = *peek(TAKE, TAKE);
         if (next.is(token::newline)) {
             (void)get(SKIP, TAKE);
             allow_directive = true;
@@ -786,17 +804,30 @@ std::vector<token> p4m::process() {
             }
         } else {
             allow_directive = false;
+            for (auto it = exp_end.begin(); it != exp_end.end();) {
+                if (it->second <= *find(TAKE, TAKE)) {
+                    macros.find(it->first)->second.being_replaced = false;
+                    it = exp_end.erase(it);
+                } else ++it;
+            }
             auto old_index = index;
             auto invocation_start = tokens.begin() + index;
+            auto old_id = peek(SKIP, SKIP);
             if (auto exp = maybe_expand_macro()) {
-                // TODO is it visible to the user if we only do
-                // inline expansion at the top level?
                 auto invocation_end = tokens.begin() + index;
                 tokens.erase(invocation_start, invocation_end);
                 tokens.insert(invocation_start, exp->begin(), exp->end());
                 index = old_index;
+                for (auto& pair : exp_end) {
+                    pair.second += exp->size();
+                    pair.second -= (invocation_end - invocation_start);
+                }
+                assert(old_id->is(token::identifier));
+                auto& mac = macros.find(old_id->spelling)->second;
+                mac.being_replaced = true;
+                exp_end[mac.name] = index + exp->size();
             } else {
-                out.push_back(*get(SKIP, TAKE));
+                out.push_back(*get(TAKE, TAKE));
             }
         }
     }
