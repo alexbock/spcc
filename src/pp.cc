@@ -360,6 +360,8 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         std::vector<token> arg;
         std::size_t inner_parens = 0;
         bool done = false;
+        bool va = false; // started __VA_ARGS__
+        if (mac.param_names.empty() && mac.variadic) va = true;
         for (auto tok = get(TAKE, TAKE); tok; tok = get(TAKE, TAKE)) {
             if (tok->is(punctuator::paren_right) && inner_parens) {
                 --inner_parens;
@@ -372,9 +374,12 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                 args.push_back(std::move(arg));
                 arg.clear();
                 break;
-            } else if (tok->is(punctuator::comma) && !inner_parens) {
+            } else if (tok->is(punctuator::comma) && !inner_parens && !va) {
                 args.push_back(std::move(arg));
                 arg.clear();
+                if (mac.variadic && args.size() == mac.param_names.size()) {
+                    va = true;
+                }
             } else if (tok->is(token::newline)) {
                 /* [6.10.3]/10
                  Within the sequence of preprocessing tokens making up an
@@ -440,6 +445,9 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         }
         // replace parameter names and handle #
         auto get_arg = [&](string_view name) -> optional<std::size_t> {
+            if (name == "__VA_ARGS__" && mac.variadic) {
+                return mac.param_names.size();
+            }
             for (std::size_t i = 0; i < mac.param_names.size(); ++i) {
                 if (mac.param_names[i] == name) return i;
             }
@@ -452,9 +460,11 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             auto tok = *otok;
             if (tok.is(token::identifier)) {
                 if (auto index = get_arg(tok.spelling)) {
-                    auto arg = args[*index];
+                    std::vector<token> arg;
+                    if (*index < args.size()) arg = args[*index];
                     for (auto& arg_tok : arg) {
-                        arg_tok.range.first.add_expansion_entry(tok.range.first);
+                        const auto loc = tok.range.first;
+                        arg_tok.range.first.add_expansion_entry(loc);
                     }
                     expansion.insert(expansion.end(),
                                      arg.begin(), arg.end());
@@ -465,9 +475,8 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                     }
                     continue;
                 } else if (tok.spelling == "__VA_ARGS__") {
-                    // TODO
-                    diagnose(diagnostic::id::not_yet_implemented,
-                             tok.range.first, "__VA_ARGS__");
+                    diagnose(diagnostic::id::pp4_cannot_use_va_args_here,
+                             tok.range.first);
                 }
             } else if (tok.is(punctuator::hash)) {
                 optional<std::size_t> index;

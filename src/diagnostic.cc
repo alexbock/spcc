@@ -241,6 +241,14 @@ namespace diagnostic {
             }
         },
         {
+            id::pp4_cannot_use_va_args_here,
+            {
+                "cannot use __VA_ARGS__ here",
+                "[6.10.3]/5",
+                category::error
+            }
+        },
+        {
             id::aux_previous_def,
             {
                 "previous definition is here",
