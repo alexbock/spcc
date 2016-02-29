@@ -342,10 +342,8 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
     auto it = macros.find(next->spelling);
     if (it == macros.end()) return {};
     auto& mac = it->second;
-    if (mac.being_replaced) {
-        tokens[*find(SKIP, SKIP)].blue = true;
-        return {};
-    }
+    std::size_t rewind_point = *find(SKIP, SKIP);
+    auto& original_token = tokens[rewind_point];
     const auto pre_name_index = index;
     next = get(SKIP, SKIP);
     if (mac.function_like) {
@@ -355,6 +353,11 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
             return {};
         }
         get(SKIP, SKIP);
+        if (mac.being_replaced) {
+            original_token.blue = true;
+            index = rewind_point;
+            return {};
+        }
         // collect arguments
         std::vector<std::vector<token>> args;
         std::vector<token> arg;
@@ -550,6 +553,11 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         remove_placemarkers(expansion);
         return expansion;
     } else {
+        if (mac.being_replaced) {
+            original_token.blue = true;
+            index = rewind_point;
+            return {};
+        }
         if (mac.predefined && mac.name == "__FILE__") {
             return std::vector<token>{ make_file_token(*next) };
         } else if (mac.predefined && mac.name == "__LINE__") {

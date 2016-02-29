@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 
 using diagnostic::diagnose;
 using namespace platform::stream;
@@ -80,6 +81,14 @@ void process_input_files() {
         //debug_dump_tokens(tokens);
         //std::cout << "@@@\n";
         //std::cout << "\n";
+        tokens.erase(std::unique(tokens.begin(), tokens.end(),
+        [](token a, token b) {
+            return a.is(token::space) && b.is(token::space);
+        }), tokens.end());
+        tokens.erase(std::unique(tokens.begin(), tokens.end(),
+        [](token a, token b) {
+            return a.is(token::newline) && b.is(token::newline);
+        }), tokens.end());
         for (auto tok : tokens) {
             if (tok.is(token::space)) std::cout << " ";
             else std::cout << tok.spelling;

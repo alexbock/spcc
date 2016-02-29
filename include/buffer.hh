@@ -30,7 +30,7 @@ public:
     location find_spelling_loc() const;
     location next_loc(std::size_t n = 1) { return { buffer(), offset() + n }; }
 
-    void add_expansion_entry(location loc);
+    void add_expansion_entry(location loc, std::size_t depth = 0);
 
     std::shared_ptr<location> expanded_from;
 private:

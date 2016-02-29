@@ -28,8 +28,9 @@ std::size_t derived_buffer::offset_in_original(std::size_t offset) const {
     }
 }
 
-void location::add_expansion_entry(location loc) {
-    if (expanded_from) expanded_from->add_expansion_entry(loc);
+void location::add_expansion_entry(location loc, std::size_t depth) {
+    if (depth > 10) return;
+    if (expanded_from) expanded_from->add_expansion_entry(loc, depth + 1);
     else expanded_from = std::make_shared<location>(loc);
 }
 
