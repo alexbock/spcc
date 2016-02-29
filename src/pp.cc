@@ -430,19 +430,6 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         }
         // TODO diagnose UB for apparent directives in macro args [6.10.3]/11
 
-        // expand each argument
-        for (auto& arg : args) {
-            hijack();
-            tokens = std::move(arg);
-            std::vector<token> expansion = process(true);
-            unhijack();
-            arg = std::move(expansion);
-            for (auto& tok : arg) {
-                if (tok.is(punctuator::hash_hash)) {
-                    tok.blue = true;
-                }
-            }
-        }
         // replace parameter names and handle #
         auto get_arg = [&](string_view name) -> optional<std::size_t> {
             if (name == "__VA_ARGS__" && mac.variadic) {
@@ -456,15 +443,38 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         std::vector<token> expansion;
         hijack();
         tokens = mac.body;
+        bool ident_is_hash_hash_rhs = false;
         for (auto otok = get(TAKE, TAKE); otok; otok = get(TAKE, TAKE)) {
             auto tok = *otok;
             if (tok.is(token::identifier)) {
                 if (auto index = get_arg(tok.spelling)) {
+                    bool should_replace = true;
+                    if (auto next = peek(SKIP, SKIP)) {
+                        if (next->is(punctuator::hash_hash)) {
+                            if (!next->blue) {
+                                should_replace = false;
+                            }
+                        }
+                    }
+                    if (ident_is_hash_hash_rhs) {
+                        ident_is_hash_hash_rhs = false;
+                        should_replace = false;
+                    }
                     std::vector<token> arg;
                     if (*index < args.size()) arg = args[*index];
+                    if (should_replace) {
+                        hijack();
+                        tokens = std::move(arg);
+                        std::vector<token> expansion = process(true);
+                        unhijack();
+                        arg = std::move(expansion);
+                    }
                     for (auto& arg_tok : arg) {
                         const auto loc = tok.range.first;
                         arg_tok.range.first.add_expansion_entry(loc);
+                        if (tok.is(punctuator::hash_hash)) {
+                            tok.blue = true;
+                        }
                     }
                     expansion.insert(expansion.end(),
                                      arg.begin(), arg.end());
@@ -524,6 +534,13 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                     expansion.push_back(tokens[0]);
                     get(SKIP, SKIP);
                     continue;
+                }
+            }
+            if (tok.is(punctuator::hash_hash) && !tok.blue) {
+                if (auto ident = peek(SKIP, SKIP)) {
+                    if (ident->is(token::identifier)) {
+                        ident_is_hash_hash_rhs = true;
+                    }
                 }
             }
             expansion.push_back(tok);

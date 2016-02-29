@@ -81,7 +81,8 @@ void process_input_files() {
         //std::cout << "@@@\n";
         //std::cout << "\n";
         for (auto tok : tokens) {
-            std::cout << tok.spelling;
+            if (tok.is(token::space)) std::cout << " ";
+            else std::cout << tok.spelling;
         }
         std::cout << "\n";
     }
