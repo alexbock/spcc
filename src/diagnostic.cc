@@ -233,6 +233,14 @@ namespace diagnostic {
             }
         },
         {
+            id::pp4_mismatched_cond_directive,
+            {
+                "mismatched #%% directive",
+                "[6.10.1]",
+                category::error
+            }
+        },
+        {
             id::aux_previous_def,
             {
                 "previous definition is here",

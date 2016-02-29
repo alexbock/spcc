@@ -692,6 +692,13 @@ token p4m::make_line_token(token at) {
     return tokens[0];
 }
 
+bool p4m::in_disabled_region() const {
+    for (auto state : cond_states) {
+        if (!state) return true;
+    }
+    return false;
+}
+
 void p4m::handle_null_directive() {
     assert(get(SKIP, TAKE)->is(token::newline));
 }
@@ -867,6 +874,63 @@ void p4m::handle_include_directive() {
     }
 }
 
+void p4m::handle_ifdef_directive() {
+    auto ifdef_tok = *get(SKIP, STOP);
+    handle_ifdef_ifndef(ifdef_tok, false);
+}
+
+void p4m::handle_ifndef_directive() {
+    auto ifndef_tok = *get(SKIP, STOP);
+    handle_ifdef_ifndef(ifndef_tok, true);
+}
+
+void p4m::handle_ifdef_ifndef(token tok, bool is_ifndef) {
+    const auto loc = tok.range.first;
+    if (in_disabled_region()) {
+        cond_states.push_back(false);
+        finish_line();
+    } else {
+        auto name = get(SKIP, STOP);
+        if (!name || !name->is(token::identifier)) {
+            diagnose(diagnostic::id::pp4_expected_macro_name, loc);
+            (void)finish_line();
+            cond_states.push_back(false); // recover
+            return;
+        }
+        auto it = macros.find(name->spelling);
+        bool result = it != macros.end();
+        if (is_ifndef) result = !result;
+        cond_states.push_back(result);
+        finish_directive_line(tok);
+    }
+}
+
+void p4m::handle_else_directive() {
+    auto else_tok = *get(SKIP, STOP);
+    const auto loc = else_tok.range.first;
+    if (cond_states.empty()) {
+        diagnose(diagnostic::id::pp4_mismatched_cond_directive, loc,
+                 else_tok.spelling);
+        finish_line();
+        return;
+    }
+    cond_states.back() = !cond_states.back();
+    finish_directive_line(else_tok);
+}
+
+void p4m::handle_endif_directive() {
+    auto endif_tok = *get(SKIP, STOP);
+    const auto loc = endif_tok.range.first;
+    if (cond_states.empty()) {
+        diagnose(diagnostic::id::pp4_mismatched_cond_directive, loc,
+                 endif_tok.spelling);
+        finish_line();
+        return;
+    }
+    cond_states.pop_back();
+    finish_directive_line(endif_tok);
+}
+
 std::vector<token> p4m::process(bool in_arg) {
     bool allow_directive = !in_arg;
     std::map<string_view, std::size_t> exp_end;
@@ -882,6 +946,21 @@ std::vector<token> p4m::process(bool in_arg) {
         } else if (next.is(punctuator::hash) && allow_directive) {
             (void)get(SKIP, TAKE);
             auto id = peek(SKIP, STOP);
+
+            if (in_disabled_region()) {
+                if (id) {
+                    bool exempt = false;
+                    exempt |= id->spelling == "ifdef";
+                    exempt |= id->spelling == "ifndef";
+                    exempt |= id->spelling == "else";
+                    exempt |= id->spelling == "endif";
+                    if (!exempt) {
+                        finish_line();
+                        continue;
+                    }
+                }
+            }
+
             if (!id) {
                 handle_null_directive();
             } else if (id->spelling == "error") {
@@ -896,6 +975,14 @@ std::vector<token> p4m::process(bool in_arg) {
                 handle_undef_directive();
             } else if (id->spelling == "include") {
                 handle_include_directive();
+            } else if (id->spelling == "ifdef") {
+                handle_ifdef_directive();
+            } else if (id->spelling == "ifndef") {
+                handle_ifndef_directive();
+            } else if (id->spelling == "else") {
+                handle_else_directive();
+            } else if (id->spelling == "endif") {
+                handle_endif_directive();
             }
         } else {
             allow_directive = false;

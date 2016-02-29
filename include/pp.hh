@@ -86,6 +86,10 @@ namespace pp {
         void handle_define_directive();
         void handle_undef_directive();
         void handle_include_directive();
+        void handle_ifdef_directive();
+        void handle_ifndef_directive();
+        void handle_else_directive();
+        void handle_endif_directive();
 
         void maybe_diagnose_macro_redefinition(const macro& def) const;
         optional<std::vector<token>> maybe_expand_macro();
@@ -98,6 +102,8 @@ namespace pp {
         void make_predefined_macro(std::string name, std::string body);
         token make_file_token(token at);
         token make_line_token(token at);
+        bool in_disabled_region() const;
+        void handle_ifdef_ifndef(token tok, bool is_ifndef);
 
         std::unique_ptr<buffer> buf;
         std::vector<token> tokens;
@@ -106,6 +112,7 @@ namespace pp {
         std::vector<std::unique_ptr<buffer>> extra_buffers;
         std::unique_ptr<raw_buffer> placemarker_buffer;
         std::size_t index = 0;
+        std::vector<bool> cond_states;
 
         struct saved_state {
             std::vector<token> tokens;

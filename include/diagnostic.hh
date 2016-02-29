@@ -45,6 +45,7 @@ namespace diagnostic {
         pp4_concatenate_invalid_token,
         pp4_cannot_use_predef_macro_here,
         pp4_predef_expand_failure,
+        pp4_mismatched_cond_directive,
         aux_previous_def,
         aux_previous_use,
         aux_expanded_here,
