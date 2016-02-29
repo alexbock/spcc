@@ -30,7 +30,7 @@ std::size_t derived_buffer::offset_in_original(std::size_t offset) const {
 
 void location::add_expansion_entry(location loc) {
     if (expanded_from) expanded_from->add_expansion_entry(loc);
-    else expanded_from = std::make_unique<location>(loc);
+    else expanded_from = std::make_shared<location>(loc);
 }
 
 string_view derived_buffer::peek() const {
