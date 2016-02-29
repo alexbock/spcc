@@ -249,6 +249,14 @@ namespace diagnostic {
             }
         },
         {
+            id::pp4_non_directive_ignored,
+            {
+                "non-directive ignored",
+                "[6.10]",
+                category::warning
+            }
+        },
+        {
             id::aux_previous_def,
             {
                 "previous definition is here",

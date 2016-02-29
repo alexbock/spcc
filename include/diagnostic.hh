@@ -47,6 +47,7 @@ namespace diagnostic {
         pp4_predef_expand_failure,
         pp4_mismatched_cond_directive,
         pp4_cannot_use_va_args_here,
+        pp4_non_directive_ignored,
         aux_previous_def,
         aux_previous_use,
         aux_expanded_here,

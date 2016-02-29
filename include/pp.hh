@@ -90,6 +90,7 @@ namespace pp {
         void handle_ifndef_directive();
         void handle_else_directive();
         void handle_endif_directive();
+        void handle_non_directive();
 
         void maybe_diagnose_macro_redefinition(const macro& def) const;
         optional<std::vector<token>> maybe_expand_macro();

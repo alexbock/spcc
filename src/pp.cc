@@ -965,6 +965,12 @@ void p4m::handle_endif_directive() {
     finish_directive_line(endif_tok);
 }
 
+void p4m::handle_non_directive() {
+    auto tok = *get(SKIP, STOP);
+    diagnose(diagnostic::id::pp4_non_directive_ignored, tok.range.first);
+    finish_line();
+}
+
 std::vector<token> p4m::process(bool in_arg) {
     bool allow_directive = !in_arg;
     std::map<string_view, std::size_t> exp_end;
@@ -1017,6 +1023,8 @@ std::vector<token> p4m::process(bool in_arg) {
                 handle_else_directive();
             } else if (id->spelling == "endif") {
                 handle_endif_directive();
+            } else {
+                handle_non_directive();
             }
         } else {
             allow_directive = false;
