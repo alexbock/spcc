@@ -398,6 +398,10 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         if (args.size() == 1 && args[0].empty() && mac.param_names.empty()) {
             args.pop_back();
         }
+        if (args.size() > 127) {
+            diagnose(diagnostic::id::translation_limit_exceeded, loc,
+                     "127", "macro arguments");
+        }
         if (!done) {
             diagnose(diagnostic::id::pp4_missing_macro_args_end, loc);
             return std::vector<token>{};
@@ -778,6 +782,15 @@ void p4m::handle_define_directive() {
         (void)finish_line();
         return;
     }
+    if (name->spelling.size() > 63) {
+        // TODO count universal character names as a single character
+        diagnose(diagnostic::id::translation_limit_exceeded,
+                 name->range.first, "63", "characters in a macro name");
+    }
+    if (macros.size() == 4095) {
+        diagnose(diagnostic::id::translation_limit_exceeded, loc,
+                 "4095", "macro names");
+    }
     macro mac{name->spelling, name->range.first};
     if (peek(STOP, STOP) && peek(STOP, STOP)->is(punctuator::paren_left)) {
         (void)get(STOP, STOP);
@@ -830,6 +843,11 @@ void p4m::handle_define_directive() {
             (void)finish_line();
             return;
         }
+
+        if (mac.param_names.size() > 127) {
+            diagnose(diagnostic::id::translation_limit_exceeded, loc,
+                     "127", "macro parameters");
+        }
     }
     if (!mac.function_like) {
         if (auto tok = peek(STOP, STOP)) {
@@ -875,6 +893,13 @@ void p4m::handle_undef_directive() {
 void p4m::handle_include_directive() {
     auto include_tok = *get(SKIP, STOP);
     const auto loc = include_tok.range.first;
+    if (include_level > 15) {
+        diagnose(diagnostic::id::translation_limit_exceeded, loc,
+                 "15", "nested #include directives");
+        diagnose(diagnostic::id::pp4_too_many_nested_includes, {});
+        index = tokens.size();
+        return;
+    }
     if (peek(SKIP, STOP) && peek(SKIP, STOP)->is(token::header_name)) {
         auto hn = get(SKIP, STOP);
         finish_directive_line(include_tok);
@@ -897,7 +922,9 @@ void p4m::handle_include_directive() {
         extra_buffers.push_back(std::move(post_p2));
         hijack();
         this->tokens = std::move(tokens);
+        ++include_level;
         auto included_tokens = process();
+        --include_level;
         unhijack();
         out.insert(out.end(), included_tokens.begin(), included_tokens.end());
     } else {
@@ -920,6 +947,10 @@ void p4m::handle_ifndef_directive() {
 
 void p4m::handle_ifdef_ifndef(token tok, bool is_ifndef) {
     const auto loc = tok.range.first;
+    if (cond_states.size() == 63) {
+        diagnose(diagnostic::id::translation_limit_exceeded, loc,
+                 "63", "nested preprocessor conditionals");
+    }
     if (in_disabled_region()) {
         cond_states.push_back(false);
         finish_line();

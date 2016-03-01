@@ -257,6 +257,22 @@ namespace diagnostic {
             }
         },
         {
+            id::pp4_too_many_nested_includes,
+            {
+                "too many nested #include directives",
+                {},
+                category::error
+            }
+        },
+        {
+            id::translation_limit_exceeded,
+            {
+                "minimum translation limit exceeded: %% %%",
+                "[5.2.4.1]",
+                category::warning
+            }
+        },
+        {
             id::aux_previous_def,
             {
                 "previous definition is here",

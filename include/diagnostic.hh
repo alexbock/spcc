@@ -48,6 +48,8 @@ namespace diagnostic {
         pp4_mismatched_cond_directive,
         pp4_cannot_use_va_args_here,
         pp4_non_directive_ignored,
+        pp4_too_many_nested_includes,
+        translation_limit_exceeded,
         aux_previous_def,
         aux_previous_use,
         aux_expanded_here,

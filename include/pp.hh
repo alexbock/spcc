@@ -114,6 +114,7 @@ namespace pp {
         std::unique_ptr<raw_buffer> placemarker_buffer;
         std::size_t index = 0;
         std::vector<bool> cond_states;
+        std::size_t include_level = 0;
 
         struct saved_state {
             std::vector<token> tokens;
