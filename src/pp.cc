@@ -1122,6 +1122,7 @@ optional<token> pp::convert_pp_token_to_token(token tok) {
             auto it = keyword_table.find(tok.spelling.to_string());
             if (it != keyword_table.end()) {
                 tok.kind = token::keyword;
+                tok.kw = it->second;
             }
             return tok;
         }
