@@ -265,11 +265,36 @@ namespace diagnostic {
             }
         },
         {
+            id::pp6_cannot_concatenate_wide_utf8,
+            {
+                "cannot concatenate UTF-8 and wide string literals",
+                "[6.4.5]/2",
+                category::error
+            }
+        },
+        {
+            id::pp6_cannot_concatenate_diff_wide,
+            {
+                "cannot concatenate wide string literals of different "
+                "character sizes",
+                "[6.4.5]/5",
+                category::error
+            }
+        },
+        {
             id::translation_limit_exceeded,
             {
                 "minimum translation limit exceeded: %% %%",
                 "[5.2.4.1]",
                 category::warning
+            }
+        },
+        {
+            id::pp_token_is_not_a_valid_token,
+            {
+                "preprocessing token could not be converted into a token",
+                "[6.4]/2",
+                category::error
             }
         },
         {

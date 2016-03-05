@@ -27,6 +27,13 @@ namespace pp { namespace regex {
         { "comment", "@line-comment@|@multiline-comment@" },
         { "space", R"((@comment@| +))" },
         { "newline", R"(\n)" },
+        // TODO floating constants
+        { "integer-constant-any-base", "@decimal-con@|@octal-con@|@hex-con@" },
+        { "integer-constant", "@integer-constant-any-base@@int-suffix@?" },
+        { "int-suffix","(u|U)(l|L)?|(u|U)(ll|LL)|(ll|LL)(u|U)?|(ll|LL)(u|U)?"},
+        { "decimal-con", "[1-9][0-9]*" },
+        { "octal-con", "0[0-7]*" },
+        { "hex-con", "(0x|0X)@hex-digit@+" },
         { "hex-digit", "[0-9a-fA-F]" },
         { "ucn", R"(\\u@hex-digit@{4}|\\U@hex-digit@{8})" },
         { "id-nondigit", "[a-zA-Z_]|@ucn@" },
@@ -65,4 +72,5 @@ namespace pp { namespace regex {
     const std::regex punctuator = build("punctuator");
     const std::regex space = build("space");
     const std::regex newline = build("newline");
+    const std::regex integer_constant = build("integer-constant");
 } }

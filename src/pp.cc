@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <set>
 
 using diagnostic::diagnose;
 using util::starts_with;
@@ -119,7 +120,7 @@ void pp::lexer::select(token tok) {
 }
 
 bool pp::lexer::allow_header_name() const {
-    /* [6.4]/4 
+    /* [6.4]/4
      header name preprocessing tokens are recognized
      only within #include preprocessing directives
     */
@@ -255,7 +256,7 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
                 }
             }
         }
-        
+
         lexer.select(tok);
     }
     return std::move(lexer.tokens);
@@ -1090,4 +1091,140 @@ std::vector<token> p4m::process(bool in_arg) {
         macros.find(pair.first)->second.being_replaced = false;
     }
     return std::move(out);
+}
+
+optional<token> pp::convert_pp_token_to_token(token tok) {
+    switch (tok.kind) {
+        case token::keyword:
+        case token::floating_constant:
+        case token::integer_constant:
+            assert(!"not a preprocessing token");
+            return tok;
+        case token::placemarker:
+        case token::header_name:
+            assert(!"cannot convert internal preprocessing token");
+        case token::other:
+            diagnose(diagnostic::id::pp_token_is_not_a_valid_token,
+                     tok.range.first);
+        case token::space:
+        case token::newline:
+            return {};
+        case token::punctuator:
+        case token::string_literal:
+        case token::character_constant:
+            return tok;
+        case token::identifier: {
+            if (tok.spelling == "__VA_ARGS__") {
+                diagnose(diagnostic::id::pp4_cannot_use_va_args_here,
+                         tok.range.first);
+                return {};
+            }
+            auto it = keyword_table.find(tok.spelling.to_string());
+            if (it != keyword_table.end()) {
+                tok.kind = token::keyword;
+            }
+            return tok;
+        }
+        case token::pp_number:
+            if (std::regex_match(tok.spelling.begin(), tok.spelling.end(),
+                                 regex::integer_constant)) {
+                tok.kind = token::integer_constant;
+                return tok;
+            } else {
+                diagnose(diagnostic::id::not_yet_implemented,
+                         tok.range.first, "floating constants");
+                return {};
+            }
+    }
+}
+
+pp::string_literal_info pp::analyze_string_literal(const token& tok) {
+    string_literal_info result;
+    result.encoding = string_literal_encoding::plain;
+    std::size_t prefix_length = 0;
+    if (starts_with(tok.spelling, "u8")) {
+        result.encoding = string_literal_encoding::utf8;
+        prefix_length = 2;
+    } else if (starts_with(tok.spelling, "L")) {
+        result.encoding = string_literal_encoding::wchar;
+        prefix_length = 1;
+    } else if (starts_with(tok.spelling, "u")) {
+        result.encoding = string_literal_encoding::char16;
+        prefix_length = 1;
+    } else if (starts_with(tok.spelling, "U")) {
+        result.encoding = string_literal_encoding::char32;
+        prefix_length = 1;
+    } else assert(!"invalid string literal prefix");
+    assert(tok.spelling.size() > 2 + prefix_length);
+    std::size_t body_length = tok.spelling.size() - 2 - prefix_length;
+    result.body = tok.spelling.substr(prefix_length + 1, body_length);
+    return result;
+}
+
+std::vector<token> pp::perform_phase_six(std::vector<token> tokens,
+                                         buffer_ptrs& extra) {
+    std::vector<token> result;
+    for (std::size_t i = 0; i < tokens.size(); ++i) {
+        if (tokens[i].is(token::string_literal)) {
+            // gather all consecutive string literals
+            auto concat_end = std::find_if_not(
+                tokens.begin() + i,
+                tokens.end(),
+                [](const token& tok) {
+                    return tok.is(token::string_literal);
+                }
+            );
+            std::vector<token> string_literals;
+            for (auto it = tokens.begin() + i; it != concat_end; ++it) {
+                string_literals.push_back(std::move(*it));
+            }
+            i += string_literals.size() - 1;
+            // determine the encoding prefix for the result
+            std::set<string_literal_encoding> encodings;
+            for (const auto& strlit : string_literals) {
+                encodings.insert(analyze_string_literal(strlit).encoding);
+            }
+            encodings.erase(string_literal_encoding::plain);
+            if (encodings.size() > 1) {
+                if (encodings.count(string_literal_encoding::utf8)) {
+                    diagnose(diagnostic::id::pp6_cannot_concatenate_wide_utf8,
+                             tokens[i].range.first);
+                } else {
+                    diagnose(diagnostic::id::pp6_cannot_concatenate_diff_wide,
+                             tokens[i].range.first);
+                }
+                for (auto& strlit: string_literals) {
+                    result.push_back(std::move(strlit));
+                }
+                continue;
+            }
+            auto encoding = string_literal_encoding::plain;
+            if (!encodings.empty()) encoding = *encodings.begin();
+            // create a new string literal
+            std::string new_body;
+            for (const auto& strlit : string_literals) {
+                new_body += strlit.spelling.to_string();
+            }
+            auto buf = std::make_unique<raw_buffer>("<concatenated>",
+                                                    new_body);
+            const location begin{*buf, 0};
+            const location end{*buf, buf->data().size() };
+            const std::pair<location, location> range = { begin, end };
+            token concatenated{token::string_literal, buf->data(), range};
+            result.push_back(std::move(concatenated));
+            extra.push_back(std::move(buf));
+        } else {
+            result.push_back(std::move(tokens[i]));
+        }
+    }
+    return result;
+}
+
+std::vector<token> pp::perform_phase_seven(const std::vector<token>& tokens) {
+    std::vector<token> result;
+    for (const auto& tok : tokens) {
+        auto converted = convert_pp_token_to_token(tok);
+        if (converted) result.push_back(std::move(*converted));
+    }
+    return result;
 }

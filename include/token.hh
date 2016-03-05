@@ -5,6 +5,7 @@
 #include "string_view.hh"
 #include "punctuator.hh"
 #include "optional.hh"
+#include "keyword.hh"
 
 #include <utility>
 #include <regex>
@@ -28,6 +29,9 @@ struct token {
         space,
         newline,
         placemarker,
+        keyword,
+        floating_constant,
+        integer_constant,
     };
 
     token(token_kind kind, string_view spelling,
@@ -44,6 +48,11 @@ struct token {
         return this->punc == punc;
     }
 
+    bool is(enum keyword kw) const {
+        if (!is(keyword)) return false;
+        return this->kw == kw;
+    }
+
     bool is(token_kind kind) const {
         return this->kind == kind;
     }
@@ -51,7 +60,10 @@ struct token {
     token_kind kind;
     string_view spelling;
     std::pair<location, location> range;
-    enum punctuator punc;
+    union {
+        enum punctuator punc;
+        enum keyword kw;
+    };
     bool blue = false; // ineligible for further macro replacement
 };
 

@@ -11,9 +11,29 @@
 #include <map>
 
 namespace pp {
+    using buffer_ptrs = std::vector<std::unique_ptr<buffer>>;
+
     std::unique_ptr<buffer> perform_phase_one(std::unique_ptr<buffer> in);
     std::unique_ptr<buffer> perform_phase_two(std::unique_ptr<buffer> in);
     std::vector<token> perform_phase_three(const buffer& in);
+    std::vector<token> perform_phase_six(std::vector<token> tokens,
+                                         buffer_ptrs& extra);
+    std::vector<token> perform_phase_seven(const std::vector<token>& tokens);
+    optional<token> convert_pp_token_to_token(token tok);
+
+    struct string_literal_info {
+        enum encoding {
+            plain,
+            utf8,
+            wchar,
+            char16,
+            char32,
+        };
+        string_view body;
+        enum encoding encoding;
+    };
+    using string_literal_encoding = enum string_literal_info::encoding;
+    string_literal_info analyze_string_literal(const token& tok);
 
     namespace regex {
         extern const std::regex header_name;
@@ -24,6 +44,7 @@ namespace pp {
         extern const std::regex punctuator;
         extern const std::regex space;
         extern const std::regex newline;
+        extern const std::regex integer_constant;
     }
 
     class lexer {

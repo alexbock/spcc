@@ -6,6 +6,7 @@ include_directories(
 set(SOURCE
     src/buffer.cc
     src/diagnostic.cc
+    src/keyword.cc
     src/main.cc
     src/options.cc
     src/test.cc
@@ -18,6 +19,7 @@ set(SOURCE
 set(INCLUDE
     include/buffer.hh
     include/diagnostic.hh
+    include/keyword.hh
     include/optional.hh
     include/options.hh
     include/string_view.hh

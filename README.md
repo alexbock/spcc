@@ -18,4 +18,12 @@ Preprocessor Progress:
 - [ ] `#if`/`#elif`
 - [ ] `_Pragma`
 - [x] Predefined macros
-- [ ] Concatenate adjacent string literals
+- [ ] Convert string literals and character constants to the execution
+character set  
+- [X] Concatenate adjacent string literals
+- [x] Convert preprocessing tokens to tokens
+
+Semantic Analysis Progress:
+- [ ] Type system
+- [ ] Expression parser
+- [ ] Constant expression evaluation
