@@ -1139,6 +1139,16 @@ optional<token> pp::convert_pp_token_to_token(token tok) {
     }
 }
 
+void pp::remove_whitespace(std::vector<token>& tokens) {
+    tokens.erase(
+        std::remove_if(tokens.begin(), tokens.end(),
+            [](const token& tok) {
+                return tok.is(token::space) || tok.is(token::newline);
+            }
+        ),
+    tokens.end());
+}
+
 pp::string_literal_info pp::analyze_string_literal(const token& tok) {
     string_literal_info result;
     result.encoding = string_literal_encoding::plain;
@@ -1155,11 +1165,21 @@ pp::string_literal_info pp::analyze_string_literal(const token& tok) {
     } else if (starts_with(tok.spelling, "U")) {
         result.encoding = string_literal_encoding::char32;
         prefix_length = 1;
-    } else assert(!"invalid string literal prefix");
+    } else assert(starts_with(tok.spelling, "\""));
     assert(tok.spelling.size() > 2 + prefix_length);
     std::size_t body_length = tok.spelling.size() - 2 - prefix_length;
     result.body = tok.spelling.substr(prefix_length + 1, body_length);
     return result;
+}
+
+std::string pp::to_string(string_literal_encoding enc) {
+    switch (enc) {
+        case string_literal_encoding::plain: return "";
+        case string_literal_encoding::wchar: return "L";
+        case string_literal_encoding::char16: return "u";
+        case string_literal_encoding::char32: return "U";
+        case string_literal_encoding::utf8: return "u8";
+    }
 }
 
 std::vector<token> pp::perform_phase_six(std::vector<token> tokens,
@@ -1204,8 +1224,10 @@ std::vector<token> pp::perform_phase_six(std::vector<token> tokens,
             // create a new string literal
             std::string new_body;
             for (const auto& strlit : string_literals) {
-                new_body += strlit.spelling.to_string();
+                new_body += analyze_string_literal(strlit).body.to_string();
             }
+            new_body = "\"" + new_body + "\"";
+            new_body = to_string(encoding) + new_body;
             auto buf = std::make_unique<raw_buffer>("<concatenated>",
                                                     new_body);
             const location begin{*buf, 0};

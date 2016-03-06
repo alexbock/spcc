@@ -20,7 +20,7 @@ static void show_version();
 static void process_input_files();
 
 int main(int argc, char** argv) {
-    //test::run_tests();
+    test::run_tests();
     options::parse(argc, argv);
     if (options::state.show_version) show_version();
     if (options::state.show_help) show_help();
@@ -36,7 +36,7 @@ void show_version() {
     std::cout << "spcc 0.1 (c) 2016 Alexander Bock\n";
 }
 
-static void debug_dump_tokens(const std::vector<token> tokens) {
+static void debug_dump_tokens(const std::vector<token>& tokens) {
     bool first = false;
     for (const auto tok : tokens) {
         if (!first) {
@@ -68,31 +68,18 @@ void process_input_files() {
         auto data = ss.str();
         ss.clear();
 
-        //std::cout << "@@@" << data << "@@@\n\n";
         auto buf = std::make_unique<raw_buffer>(filename, data);
         auto post_p1 = pp::perform_phase_one(std::move(buf));
         auto post_p2 = pp::perform_phase_two(std::move(post_p1));
-        //std::cout << "@@@" << post_p2->data() << "@@@\n";
         auto tokens = pp::perform_phase_three(*post_p2);
-        //debug_dump_tokens(tokens);
-        //std::cout << "@@@\n";
         pp::phase_four_manager p4m(std::move(post_p2), std::move(tokens));
         tokens = p4m.process();
-        //debug_dump_tokens(tokens);
-        //std::cout << "@@@\n";
-        //std::cout << "\n";
-        tokens.erase(std::unique(tokens.begin(), tokens.end(),
-        [](token a, token b) {
-            return a.is(token::space) && b.is(token::space);
-        }), tokens.end());
-        tokens.erase(std::unique(tokens.begin(), tokens.end(),
-        [](token a, token b) {
-            return a.is(token::newline) && b.is(token::newline);
-        }), tokens.end());
-        for (auto tok : tokens) {
-            if (tok.is(token::space)) std::cout << " ";
-            else std::cout << tok.spelling;
-        }
+        pp::remove_whitespace(tokens);
+        pp::buffer_ptrs extra_buffers;
+        tokens = pp::perform_phase_six(std::move(tokens), extra_buffers);
+        tokens = pp::perform_phase_seven(tokens);
+        std::cout << "\n";
+        debug_dump_tokens(tokens);
         std::cout << "\n";
     }
 }

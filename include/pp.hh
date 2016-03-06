@@ -20,6 +20,7 @@ namespace pp {
                                          buffer_ptrs& extra);
     std::vector<token> perform_phase_seven(const std::vector<token>& tokens);
     optional<token> convert_pp_token_to_token(token tok);
+    void remove_whitespace(std::vector<token>& tokens);
 
     struct string_literal_info {
         enum encoding {
@@ -34,6 +35,7 @@ namespace pp {
     };
     using string_literal_encoding = enum string_literal_info::encoding;
     string_literal_info analyze_string_literal(const token& tok);
+    std::string to_string(string_literal_encoding enc);
 
     namespace regex {
         extern const std::regex header_name;
