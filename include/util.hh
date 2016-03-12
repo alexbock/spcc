@@ -39,6 +39,21 @@ namespace util {
         } result(t);
         return result;
     }
+
+    template<typename T, typename U>
+    bool is(U* u) {
+        if (!u) return false;
+        else return T::is_type_of(u);
+    }
+
+    template<typename T, typename U>
+    const T* virtual_cast(const U* u) {
+        if (is<T>(u)) return static_cast<const T*>(u);
+        else return nullptr;
+    }
 }
+
+using util::is;
+using util::virtual_cast;
 
 #endif

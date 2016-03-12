@@ -10,6 +10,7 @@ set(SOURCE
     src/main.cc
     src/options.cc
     src/test.cc
+    src/type.cc
     src/platform.cc
     src/pp.cc
     src/pp_regex.cc
@@ -25,6 +26,7 @@ set(INCLUDE
     include/string_view.hh
     include/test.hh
     include/token.hh
+    include/type.hh
     include/platform.hh
     include/pp.hh
     include/punctuator.hh
