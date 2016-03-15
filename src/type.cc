@@ -1,6 +1,7 @@
 #include "type.hh"
 
 #include <cassert>
+#include <utility>
 
 namespace sem {
     bool type::is_basic_type() const {
@@ -105,6 +106,15 @@ namespace sem {
         void_type = std::make_unique<type>(tk_void);
         initialize_integer_types();
         initialize_floating_types();
+    }
+
+    const type* type_manager::build_pointer_to(const type* ty) {
+        auto it = pointer_types.find(ty);
+        if (it != pointer_types.end()) return it->second.get();
+        auto ptr_ty = std::make_unique<type>(tk_pointer);
+        ptr_ty->pointee_type = ty;
+        pointer_types[ty] = std::move(ptr_ty);
+        return pointer_types[ty].get();
     }
 
     void type_manager::initialize_integer_types() {
