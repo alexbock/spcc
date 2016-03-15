@@ -3,6 +3,9 @@
 
 #include "util.hh"
 
+#include <unordered_map>
+#include <memory>
+
 namespace sem {
     enum qualifier {
         qual_const    = 1 << 0,
@@ -11,7 +14,6 @@ namespace sem {
     };
 
     enum type_kind {
-        tk_object,
         tk_void,
         tk_integer,
         tk_real_floating,
@@ -22,6 +24,7 @@ namespace sem {
         tk_union,
         tk_atomic,
         tk_array,
+        tk_enum,
     };
 
     enum integer_kind {
@@ -41,6 +44,10 @@ namespace sem {
 
     class type {
     public:
+        type(enum type_kind kind) : kind{kind} { }
+        type(integer_kind int_kind, bool is_signed) :
+        kind{tk_integer}, int_kind{int_kind}, is_signed{is_signed} { }
+
         bool is_const() const { return quals & qual_const; }
         bool is_volatile() const { return quals & qual_volatile; }
         bool is_restrict() const { return quals & qual_restrict; }
@@ -49,134 +56,65 @@ namespace sem {
         bool is_arithmetic_type() const;
         bool is_real_type() const;
         bool is_character_type() const;
+        bool is_integer_type() const;
+        bool is_real_floating_type() const;
+        bool is_pointer_type() const;
         bool is_scalar_type() const;
         bool is_aggregate_type() const;
         bool is_any_floating_type() const;
 
         bool is_specific_integer_kind(integer_kind) const;
         bool is_bool_type() const;
+        bool is_object_type() const;
+        bool is_complete_object_type() const;
+        bool is_incomplete_object_type() const;
 
         enum type_kind type_kind() const { return kind; }
     private:
+        friend class type_manager;
+
         qualifier quals;
         enum type_kind kind;
+
+        union {
+            struct { // tk_integer
+                integer_kind int_kind;
+                bool is_signed;
+            };
+            floating_kind float_kind; // tk_*_floating
+            const type* pointee_type; // tk_pointer
+            struct { // tk_function
+                // TODO
+            };
+            struct {  // tk_array
+                // TODO
+            };
+        };
     };
 
-    class object_type : public type {
+    class type_manager {
     public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() != tk_function;
-        }
+        type_manager();
 
-        virtual bool is_complete() const = 0;
+        const type* build_pointer_to(const type* ty);
+        const type* get_integer_type(integer_kind kind) const;
+        const type* get_real_floating_type(floating_kind kind) const;
+        const type* get_complex_floating_type(floating_kind kind) const;
+        const type* get_void_type() const;
     private:
-    };
+        void initialize_integer_types();
+        void initialize_floating_types();
+        void register_integer_type(integer_kind kind, bool is_signed);
+        void register_floating_type(floating_kind kind, bool is_real);
 
-    class void_type : public object_type {
-    public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() == tk_void;
-        }
+        using type_uptr = std::unique_ptr<type>;
 
-        bool is_complete() const override { return false; }
-    private:
-    };
-
-    class integer_type : public object_type {
-    public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() == tk_integer;
-        }
-
-        bool is_complete() const override { return true; }
-        integer_kind int_kind() const { return kind; }
-        bool is_signed() const { return !is_unsigned; }
-    private:
-        integer_kind kind;
-        bool is_unsigned;
-    };
-
-    class real_floating_type : public object_type {
-    public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() == tk_real_floating;
-        }
-
-        floating_kind float_kind() const { return kind; }
-        bool is_complete() const override { return true; }
-    private:
-        floating_kind kind;
-    };
-
-    class complex_floating_type : public object_type {
-    public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() == tk_complex_floating;
-        }
-
-        floating_kind float_kind() const { return kind; }
-        bool is_complete() const override { return true; }
-    private:
-        floating_kind kind;
-    };
-
-    class pointer_type : public object_type {
-    public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() == tk_pointer;
-        }
-
-        bool is_complete() const override { return true; }
-    private:
-        type* pointee;
-    };
-
-    class array_type : public object_type {
-    public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() == tk_array;
-        }
-
-        bool is_complete() const override;
-    private:
-    };
-
-    class atomic_type : public object_type {
-    public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() == tk_atomic;
-        }
-
-        bool is_complete() const override { return true; }
-    private:
-    };
-
-    class structure_type : public object_type {
-    public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() == tk_structure;
-        }
-
-        bool is_complete() const override { return true; }
-    private:
-    };
-
-    class union_type : public object_type {
-    public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() == tk_union;
-        }
-
-        bool is_complete() const override { return true; }
-    private:
-    };
-
-    class function_type : public type {
-    public:
-        static bool is_type_of(const type* ty) {
-            return ty->type_kind() == tk_function;
-        }
-    private:
+        type_uptr void_type;
+        std::unordered_map<integer_kind, type_uptr> signed_integer_types;
+        std::unordered_map<integer_kind, type_uptr> unsigned_integer_types;
+        std::unordered_map<floating_kind, type_uptr> real_floating_types;
+        std::unordered_map<floating_kind, type_uptr> complex_floating_types;
+        std::unordered_map<const type*, type_uptr> pointer_types;
     };
 }
 
