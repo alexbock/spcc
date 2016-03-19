@@ -97,7 +97,7 @@ namespace sem {
         type_manager();
 
         const type* build_pointer_to(const type* ty);
-        const type* get_integer_type(integer_kind kind) const;
+        const type* get_integer_type(integer_kind kind, bool is_signed) const;
         const type* get_real_floating_type(floating_kind kind) const;
         const type* get_complex_floating_type(floating_kind kind) const;
         const type* get_void_type() const;

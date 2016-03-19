@@ -1150,6 +1150,7 @@ void pp::remove_whitespace(std::vector<token>& tokens) {
 }
 
 pp::string_literal_info pp::analyze_string_literal(const token& tok) {
+    assert(tok.is(token::string_literal));
     string_literal_info result;
     result.encoding = string_literal_encoding::plain;
     std::size_t prefix_length = 0;

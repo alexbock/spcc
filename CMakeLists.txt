@@ -5,7 +5,9 @@ include_directories(
 )
 set(SOURCE
     src/buffer.cc
+    src/decl.cc
     src/diagnostic.cc
+    src/expr.cc
     src/keyword.cc
     src/main.cc
     src/options.cc
@@ -19,7 +21,9 @@ set(SOURCE
 )
 set(INCLUDE
     include/buffer.hh
+    include/decl.hh
     include/diagnostic.hh
+    include/expr.hh
     include/keyword.hh
     include/optional.hh
     include/options.hh

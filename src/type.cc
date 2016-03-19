@@ -101,6 +101,8 @@ namespace sem {
         return is_object_type() && !is_complete_object_type();
     }
 
+    using tm = type_manager;
+
     type_manager::type_manager() {
         // create standard types
         void_type = std::make_unique<type>(tk_void);
@@ -108,7 +110,7 @@ namespace sem {
         initialize_floating_types();
     }
 
-    const type* type_manager::build_pointer_to(const type* ty) {
+    const type* tm::build_pointer_to(const type* ty) {
         auto it = pointer_types.find(ty);
         if (it != pointer_types.end()) return it->second.get();
         auto ptr_ty = std::make_unique<type>(tk_pointer);
@@ -117,7 +119,7 @@ namespace sem {
         return pointer_types[ty].get();
     }
 
-    void type_manager::initialize_integer_types() {
+    void tm::initialize_integer_types() {
         register_integer_type(integer_kind::ik_bool, false);
         register_integer_type(integer_kind::ik_char, false);
         register_integer_type(integer_kind::ik_int, false);
@@ -132,7 +134,7 @@ namespace sem {
         register_integer_type(integer_kind::ik_short, true);
     }
 
-    void type_manager::initialize_floating_types() {
+    void tm::initialize_floating_types() {
         register_floating_type(fk_float, true);
         register_floating_type(fk_double, true);
         register_floating_type(fk_long_double, true);
@@ -142,18 +144,37 @@ namespace sem {
         register_floating_type(fk_long_double, false);
     }
 
-    void type_manager::register_integer_type(integer_kind kind,
-                                             bool is_signed) {
+    void tm::register_integer_type(integer_kind kind,
+                                   bool is_signed) {
         auto& map = is_signed ? signed_integer_types : unsigned_integer_types;
         map[kind] = std::make_unique<type>(kind, is_signed);
     }
 
-    void type_manager::register_floating_type(floating_kind kind,
-                                              bool is_real) {
+    void tm::register_floating_type(floating_kind kind,
+                                    bool is_real) {
         auto& map = is_real ? real_floating_types : complex_floating_types;
         auto type_kind = is_real ? tk_real_floating : tk_complex_floating;
         auto ty = std::make_unique<type>(type_kind);
         ty->float_kind = kind;
         map[kind] = std::move(ty);
+    }
+
+    const type* tm::get_integer_type(integer_kind kind,
+                                     bool is_signed) const {
+        assert(!(kind == ik_bool && is_signed));
+        auto& map = is_signed ? signed_integer_types : unsigned_integer_types;
+        return map.find(kind)->second.get();
+    }
+
+    const type* tm::get_real_floating_type(floating_kind kind) const {
+        return real_floating_types.find(kind)->second.get();
+    }
+
+    const type* tm::get_complex_floating_type(floating_kind kind) const {
+        return complex_floating_types.find(kind)->second.get();
+    }
+
+    const type* tm::get_void_type() const {
+        return void_type.get();
     }
 }
