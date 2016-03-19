@@ -20,11 +20,26 @@ static void show_version();
 static void process_input_files();
 
 int main(int argc, char** argv) {
-    test::run_tests();
     options::parse(argc, argv);
-    if (options::state.show_version) show_version();
-    if (options::state.show_help) show_help();
-    process_input_files();
+    switch (options::state.mode) {
+        case options::run_mode::show_version:
+            show_version();
+            break;
+        case options::run_mode::show_help:
+            show_help();
+            break;
+        case options::run_mode::run_tests:
+            test::run_tests();
+            break;
+        case options::run_mode::normal:
+            process_input_files();
+            break;
+        case options::run_mode::option_parsing_error:
+            break;
+        case options::run_mode::dump_config:
+            options::dump();
+            break;
+    }
     return options::state.exit_code;
 }
 

@@ -21,6 +21,8 @@ namespace diagnostic {
         no_input_files,
         cannot_open_file,
         input_file_not_dot_c,
+        invalid_option,
+        invalid_size,
         not_yet_implemented,
         pp1_invalid_utf8,
         pp2_missing_newline,

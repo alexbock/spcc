@@ -35,6 +35,22 @@ namespace diagnostic {
             }
         },
         {
+            id::invalid_option,
+            {
+                "invalid option '%%': %%",
+                {},
+                category::error
+            }
+        },
+        {
+            id::invalid_size,
+            {
+                "invalid size: %%",
+                {},
+                category::error
+            }
+        },
+        {
             id::not_yet_implemented,
             {
                 "not yet implemented: %%",
