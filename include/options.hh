@@ -11,6 +11,7 @@ namespace options {
         show_version,
         run_tests,
         dump_config,
+        debug_parse_declarator,
         option_parsing_error,
     };
 
@@ -30,6 +31,8 @@ namespace options {
         int exit_code = 0;
         size_info sizes;
         bool is_char_signed = true;
+
+        std::string debug_declarator_to_parse;
     };
 
     extern config state;

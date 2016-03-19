@@ -53,6 +53,8 @@ namespace diagnostic {
         pp4_too_many_nested_includes,
         pp6_cannot_concatenate_wide_utf8,
         pp6_cannot_concatenate_diff_wide,
+        pp7_expected_end_of_list,
+        pp7_incomplete_list,
         pp_token_is_not_a_valid_token,
         translation_limit_exceeded,
         aux_previous_def,

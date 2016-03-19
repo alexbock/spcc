@@ -26,4 +26,5 @@ character set
 Semantic Analysis Progress:
 - [ ] Type system
 - [ ] Expression parser
+- [x] Declarator parser
 - [ ] Constant expression evaluation

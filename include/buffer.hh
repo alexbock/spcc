@@ -38,6 +38,8 @@ private:
     std::size_t offset_;
 };
 
+using loc_range = std::pair<location, location>;
+
 class raw_buffer : public buffer {
 public:
     raw_buffer(std::string name, std::string data) :

@@ -76,6 +76,11 @@ namespace options {
         state.mode = run_mode::dump_config;
     }
 
+    void handle_parse_declarator(std::string, optional<std::string> arg) {
+        state.mode = run_mode::debug_parse_declarator;
+        state.debug_declarator_to_parse = *arg + "\n";
+    }
+
     void register_options() {
         assert(options.empty() && "options already registered");
         register_option({
@@ -153,6 +158,13 @@ namespace options {
             handle_dump_config,
             false, false,
             "dump configuration",
+            {}
+        });
+        register_option({
+            {}, "parse-declarator",
+            handle_parse_declarator,
+            true, true,
+            "(debug) parse a declarator",
             {}
         });
     }

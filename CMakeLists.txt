@@ -6,6 +6,7 @@ include_directories(
 set(SOURCE
     src/buffer.cc
     src/decl.cc
+    src/declarator.cc
     src/diagnostic.cc
     src/expr.cc
     src/keyword.cc
@@ -13,6 +14,8 @@ set(SOURCE
     src/options.cc
     src/test.cc
     src/type.cc
+    src/parser.cc
+    src/parse_expr.cc
     src/platform.cc
     src/pp.cc
     src/pp_regex.cc
@@ -22,6 +25,7 @@ set(SOURCE
 set(INCLUDE
     include/buffer.hh
     include/decl.hh
+    include/declarator.hh
     include/diagnostic.hh
     include/expr.hh
     include/keyword.hh
@@ -31,6 +35,8 @@ set(INCLUDE
     include/test.hh
     include/token.hh
     include/type.hh
+    include/parser.hh
+    include/parse_expr.hh
     include/platform.hh
     include/pp.hh
     include/punctuator.hh

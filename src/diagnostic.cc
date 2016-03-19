@@ -353,6 +353,22 @@ namespace diagnostic {
                 category::auxiliary
             }
         },
+        {
+            id::pp7_expected_end_of_list,
+            {
+                "expected end of list",
+                {},
+                category::error
+            }
+        },
+        {
+            id::pp7_incomplete_list,
+            {
+                "unexpected end of list",
+                {},
+                category::error
+            }
+        },
     };
 
     const info& find(id diag) {
