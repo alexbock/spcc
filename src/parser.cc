@@ -1,5 +1,6 @@
 #include "parser.hh"
 #include "diagnostic.hh"
+#include "parse_expr.hh"
 
 #include <cassert>
 #include <climits>
@@ -31,9 +32,22 @@ namespace parse {
 
     node_ptr paren_rule::parse(parser& p, token tok) const {
         assert(tok.is(punctuator::paren_left));
+        if (!p.is_parsing_declarator()) {
+            if (p.is_declarator_ahead()) {
+                p.push_ruleset(true);
+                auto declarator = p.parse(0);
+                p.pop_ruleset();
+                auto rparen = p.next();
+                assert(rparen.is(punctuator::paren_right)); // TODO error
+                auto operand = p.parse(ep_prefix);
+                return std::make_unique<cast_node>(tok, rparen,
+                                                   std::move(declarator),
+                                                   std::move(operand));
+            }
+        }
         auto body = p.parse(0);
         auto rparen = p.next();
-        assert(rparen.is(punctuator::paren_right));
+        assert(rparen.is(punctuator::paren_right)); // TODO error
         return std::make_unique<paren_node>(tok, std::move(body), rparen);
     }
 
@@ -69,7 +83,7 @@ namespace parse {
                 continue;
             } else {
                 require_arg = false;
-                args.push_back(p.parse(1));
+                args.push_back(p.parse(ep_comma));
                 if (p.peek().is(punctuator::comma)) {
                     require_arg = true;
                     p.next();
@@ -134,6 +148,13 @@ namespace parse {
     void parser::pop_ruleset() {
         assert(!use_declarator_ruleset.empty());
         use_declarator_ruleset.pop();
+    }
+
+    bool parser::is_declarator_ahead() const {
+        auto tok = peek();
+        if (tok.is(token::identifier)) return is_typedef_name(tok.spelling);
+        if (tok.is(token::keyword)) return !tok.is(kw_sizeof);
+        return false;
     }
 
     int parser::precedence_peek() {

@@ -269,6 +269,8 @@ namespace parse {
         bool is_typedef_name(string_view name) const;
         void push_ruleset(bool declarator);
         void pop_ruleset();
+        bool is_declarator_ahead() const;
+        bool is_parsing_declarator() const;
     private:
         template<typename T>
         const T* find_rule(const token& tok, const rule_map<T>& rules) {
@@ -284,7 +286,6 @@ namespace parse {
             return match;
         }
         int precedence_peek() noexcept(false);
-        bool is_parsing_declarator() const;
 
         const std::vector<token>& tokens;
         std::size_t next_token = 0;
