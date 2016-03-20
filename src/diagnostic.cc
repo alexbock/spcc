@@ -322,6 +322,22 @@ namespace diagnostic {
             }
         },
         {
+            id::pp7_expected_ident_or_body,
+            {
+                "expected identifier or body",
+                {},
+                category::error
+            }
+        },
+        {
+            id::pp7_expected_semicolon,
+            {
+                "expected semicolon",
+                {},
+                category::error
+            }
+        },
+        {
             id::translation_limit_exceeded,
             {
                 "minimum translation limit exceeded: %% %%",

@@ -106,6 +106,34 @@ namespace parse {
                                                        std::move(size),
                                                        tok, end);
     }
+
+    node_ptr tag_rule::parse(parser& p, token tok) const {
+        optional<token> ident;
+        if (p.peek().is(token::identifier)) {
+            ident = p.next();
+        }
+        std::vector<node_ptr> body;
+        optional<token> rbrace;
+        if (p.peek().is(punctuator::curly_left)) {
+            p.next();
+            while (!p.peek().is(punctuator::curly_right)) {
+                auto child = p.parse(0);
+                if (p.peek().is(punctuator::semicolon)) p.next();
+                else {
+                    diagnose(diagnostic::id::pp7_expected_semicolon,
+                             p.peek().range.first);
+                }
+                body.push_back(std::move(child));
+            }
+            assert(p.peek().is(punctuator::curly_right));
+            rbrace = p.next();
+        } else if (!ident) {
+            diagnose(diagnostic::id::pp7_expected_ident_or_body,
+                     p.peek().range.first);
+        }
+        return std::make_unique<tag_node>(tok, ident, rbrace,
+                                          std::move(body), p.parse(0));
+    }
 }
 
 parse::ruleset parse::declarator_ruleset = {
@@ -148,6 +176,14 @@ parse::ruleset parse::declarator_ruleset = {
                        tok.is(punctuator::square_right);
             },
             new parse::abstract_placeholder_rule
+        },
+        {
+            +[](const token& tok, parser& p) -> bool {
+                return tok.is(kw_struct) ||
+                       tok.is(kw_union) ||
+                       tok.is(kw_enum);
+            },
+            new parse::tag_rule
         },
     },
     {
