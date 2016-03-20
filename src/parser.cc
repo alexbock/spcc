@@ -31,7 +31,7 @@ namespace parse {
 
     node_ptr paren_rule::parse(parser& p, token tok) const {
         assert(tok.is(punctuator::paren_left));
-        auto body = p.parse(INT_MAX);
+        auto body = p.parse(0);
         auto rparen = p.next();
         assert(rparen.is(punctuator::paren_right));
         return std::make_unique<paren_node>(tok, std::move(body), rparen);
@@ -69,7 +69,7 @@ namespace parse {
                 continue;
             } else {
                 require_arg = false;
-                args.push_back(p.parse(0));
+                args.push_back(p.parse(1));
                 if (p.peek().is(punctuator::comma)) {
                     require_arg = true;
                     p.next();

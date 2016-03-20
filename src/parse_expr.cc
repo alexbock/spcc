@@ -15,7 +15,7 @@ enum expr_precedence {
     ep_logical_or = 475,
     ep_conditonal = 400,
     ep_assignment = 300,
-    ep_comma = 200,
+    ep_comma = 1,
 };
 
 parse::ruleset parse::expr_ruleset = {
