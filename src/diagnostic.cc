@@ -298,6 +298,30 @@ namespace diagnostic {
             }
         },
         {
+            id::pp7_expected_end_of_list,
+            {
+                "expected end of list",
+                {},
+                category::error
+            }
+        },
+        {
+            id::pp7_incomplete_list,
+            {
+                "unexpected end of list",
+                {},
+                category::error
+            }
+        },
+        {
+            id::pp7_expected_end_of_array_declarator,
+            {
+                "expected ] to end array declarator",
+                {},
+                category::error
+            }
+        },
+        {
             id::translation_limit_exceeded,
             {
                 "minimum translation limit exceeded: %% %%",
@@ -351,22 +375,6 @@ namespace diagnostic {
                 "macro '%%' defined here",
                 {},
                 category::auxiliary
-            }
-        },
-        {
-            id::pp7_expected_end_of_list,
-            {
-                "expected end of list",
-                {},
-                category::error
-            }
-        },
-        {
-            id::pp7_incomplete_list,
-            {
-                "unexpected end of list",
-                {},
-                category::error
             }
         },
     };

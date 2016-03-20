@@ -1,5 +1,8 @@
 #include "declarator.hh"
 #include "util.hh"
+#include "diagnostic.hh"
+
+using diagnostic::diagnose;
 
 enum declarator_precedence {
     dp_pointer = 100,
@@ -43,6 +46,29 @@ namespace parse {
         return std::make_unique<abstract_placeholder_node>(tok);
     }
 
+    node_ptr declarator_array_rule::parse(parser& p, node_ptr lhs,
+                                          token tok) const {
+        std::vector<token> mods;
+        while (p.peek().is(token::keyword)) {
+            if (is_type_qualifier(p.peek().kw) || p.peek().is(kw_static)) {
+                mods.push_back(p.next());
+            } else break;
+        }
+        node_ptr size = nullptr;
+        if (!p.peek().is(punctuator::square_right)) {
+            // TODO try to parse an expression
+        }
+        auto end = p.next();
+        if (!end.is(punctuator::square_right)) {
+            diagnose(diagnostic::id::pp7_expected_end_of_array_declarator,
+                     end.range.first);
+        }
+        return std::make_unique<declarator_array_node>(std::move(lhs),
+                                                       std::move(mods),
+                                                       std::move(size),
+                                                       tok, end);
+    }
+
     std::string pronounce_declarator(const node& root) {
         if (dynamic_cast<const abstract_placeholder_node*>(&root)) {
             return "";
@@ -82,6 +108,10 @@ namespace parse {
             return result;
         } else if (auto p = dynamic_cast<const paren_node*>(&root)) {
             return pronounce_declarator(p->operand());
+        } else if (auto a = dynamic_cast<const declarator_array_node*>(&root)) {
+            std::string result = pronounce_declarator(a->base());
+            result += "array of ";
+            return result;
         } else {
             return " ??? ";
         }
@@ -125,7 +155,8 @@ parse::ruleset parse::declarator_ruleset = {
         {
             +[](const token& tok) -> bool {
                 return tok.is(punctuator::paren_right) ||
-                       tok.is(punctuator::comma);
+                       tok.is(punctuator::comma) ||
+                       tok.is(punctuator::square_right);
             },
             new parse::abstract_placeholder_rule
         },
@@ -136,6 +167,12 @@ parse::ruleset parse::declarator_ruleset = {
                 return tok.is(punctuator::paren_left);
             },
             new parse::call_rule
+        },
+        {
+            +[](const token& tok) -> bool {
+                return tok.is(punctuator::square_left);
+            },
+            new parse::declarator_array_rule
         },
     }
 };
