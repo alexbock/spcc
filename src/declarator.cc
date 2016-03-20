@@ -78,6 +78,18 @@ namespace parse {
                 mods.push_back(p.next());
             } else break;
         }
+        bool found_star = false;
+        if (p.peek().is(punctuator::star)) {
+            mods.push_back(p.next());
+            found_star = true;
+        }
+        if (found_star && !p.peek().is(punctuator::square_right)) {
+            // the grammar requires the star modifier to be last,
+            // so we have to back this out to allow a VLA expression
+            // that happens to start with unary *
+            mods.pop_back();
+            p.rewind();
+        }
         node_ptr size = nullptr;
         if (!p.peek().is(punctuator::square_right)) {
             p.push_ruleset(false);
