@@ -8,7 +8,9 @@
 #include <vector>
 #include <exception>
 #include <map>
+#include <set>
 #include <cstddef>
+#include <stack>
 
 namespace parse {
     class parser;
@@ -244,7 +246,7 @@ namespace parse {
         std::string msg;
     };
 
-    using token_check = bool(*)(const token&);
+    using token_check = bool(*)(const token&, parser& p);
     template<typename T>
     using rule_map = std::map<token_check, T*>;
     struct ruleset {
@@ -264,12 +266,15 @@ namespace parse {
         void rewind();
         bool has_next_token() const;
         const ruleset& rules() const;
+        bool is_typedef_name(string_view name) const;
+        void push_ruleset(bool declarator);
+        void pop_ruleset();
     private:
         template<typename T>
-        const T* find_rule(const token& tok, const rule_map<T>& rules) const {
+        const T* find_rule(const token& tok, const rule_map<T>& rules) {
             T* match = nullptr;
             for (const auto& pair : rules) {
-                if (pair.first(tok)) {
+                if (pair.first(tok, *this)) {
                     if (match) {
                         throw parse_error("multiple rules matched token");
                     }
@@ -278,10 +283,13 @@ namespace parse {
             }
             return match;
         }
-        int precedence_peek() const noexcept(false);
+        int precedence_peek() noexcept(false);
 
         const std::vector<token>& tokens;
         std::size_t next_token = 0;
+
+        std::set<string_view> typedef_names;
+        std::stack<bool> use_declarator_ruleset;
     };
 }
 

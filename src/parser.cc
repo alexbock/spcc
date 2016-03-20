@@ -123,7 +123,20 @@ namespace parse {
         return declarator_ruleset; // TODO
     }
 
-    int parser::precedence_peek() const {
+    bool parser::is_typedef_name(string_view name) const {
+        return typedef_names.count(name);
+    }
+
+    void parser::push_ruleset(bool declarator) {
+        use_declarator_ruleset.push(declarator);
+    }
+
+    void parser::pop_ruleset() {
+        assert(!use_declarator_ruleset.empty());
+        use_declarator_ruleset.pop();
+    }
+
+    int parser::precedence_peek() {
         if (!has_next_token()) return 0;
         auto in_rule = find_rule(peek(), rules().infix_rules);
         return in_rule ? in_rule->precedence() : 0;

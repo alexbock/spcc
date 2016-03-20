@@ -119,7 +119,9 @@ void debug_parse_declarator() {
     tokens = pp::perform_phase_seven(tokens);
 
     parse::parser p{tokens};
+    p.push_ruleset(true);
     auto node = p.parse(0);
+    p.pop_ruleset();
     node->dump();
     std::cout << "\npronounced as: ";
     std::cout << parse::pronounce_declarator(*node) << "\n";
