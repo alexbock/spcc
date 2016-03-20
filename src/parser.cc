@@ -33,7 +33,7 @@ namespace parse {
     node_ptr paren_rule::parse(parser& p, token tok) const {
         assert(tok.is(punctuator::paren_left));
         if (!p.is_parsing_declarator()) {
-            if (p.is_declarator_ahead()) {
+            if (!p.could_be_expr_ahead()) {
                 p.push_ruleset(true);
                 auto declarator = p.parse(0);
                 p.pop_ruleset();
@@ -76,11 +76,21 @@ namespace parse {
                          p.peek().range.first);
                 allow_arg = true;
             }
-            if (p.peek().is(punctuator::ellipsis)) {
-                allow_arg = false;
-                require_arg = false;
-                args.push_back(std::make_unique<token_node>(p.next()));
-                continue;
+            if (p.is_parsing_declarator()) {
+                if (p.peek().is(punctuator::ellipsis)) {
+                    allow_arg = false;
+                    require_arg = false;
+                    args.push_back(std::make_unique<token_node>(p.next()));
+                    continue;
+                } else {
+                    // TODO decl spec + declarator
+                    require_arg = false;
+                    args.push_back(p.parse(0));
+                    if (p.peek().is(punctuator::comma)) {
+                        require_arg = true;
+                        p.next();
+                    }
+                }
             } else {
                 require_arg = false;
                 args.push_back(p.parse(ep_comma));
@@ -141,6 +151,11 @@ namespace parse {
         return typedef_names.count(name);
     }
 
+    const sem::type* parser::get_typedef_type(string_view name) const {
+        assert(is_typedef_name(name));
+        return typedef_names.find(name)->second;
+    }
+
     void parser::push_ruleset(bool declarator) {
         use_declarator_ruleset.push(declarator);
     }
@@ -150,11 +165,11 @@ namespace parse {
         use_declarator_ruleset.pop();
     }
 
-    bool parser::is_declarator_ahead() const {
+    bool parser::could_be_expr_ahead() const {
         auto tok = peek();
-        if (tok.is(token::identifier)) return is_typedef_name(tok.spelling);
-        if (tok.is(token::keyword)) return !tok.is(kw_sizeof);
-        return false;
+        if (tok.is(token::identifier)) return !is_typedef_name(tok.spelling);
+        if (tok.is(token::keyword)) return tok.is(kw_sizeof);
+        return true;
     }
 
     int parser::precedence_peek() {

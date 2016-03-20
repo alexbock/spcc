@@ -7,6 +7,7 @@
 #include "platform.hh"
 #include "parser.hh"
 #include "declarator.hh"
+#include "decl_spec.hh"
 
 #include <iostream>
 #include <cstdlib>
@@ -21,6 +22,7 @@ static void show_help();
 static void show_version();
 static void process_input_files();
 static void debug_parse();
+static void debug_scratch();
 
 int main(int argc, char** argv) {
     options::parse(argc, argv);
@@ -45,6 +47,9 @@ int main(int argc, char** argv) {
         case options::run_mode::debug_parse_declarator:
         case options::run_mode::debug_parse_expr:
             debug_parse();
+            break;
+        case options::run_mode::debug_scratch:
+            debug_scratch();
             break;
     }
     return options::state.exit_code;
@@ -128,4 +133,30 @@ void debug_parse() {
     auto node = p.parse(0);
     p.pop_ruleset();
     node->dump();
+}
+
+void debug_scratch() {
+    const auto& data = options::state.debug_string_to_parse;
+    auto buf = std::make_unique<raw_buffer>("<debug>", data);
+    auto post_p1 = pp::perform_phase_one(std::move(buf));
+    auto post_p2 = pp::perform_phase_two(std::move(post_p1));
+    auto tokens = pp::perform_phase_three(*post_p2);
+    pp::phase_four_manager p4m(std::move(post_p2), std::move(tokens));
+    tokens = p4m.process();
+    pp::remove_whitespace(tokens);
+    pp::buffer_ptrs extra_buffers;
+    tokens = pp::perform_phase_six(std::move(tokens), extra_buffers);
+    tokens = pp::perform_phase_seven(tokens);
+
+    parse::parser p{tokens};
+    auto ds = parse::parse_decl_spec(p);
+    auto idl = parse::parse_init_declarator_list(p);
+    for (const auto& id : idl) {
+        id.declarator->dump();
+        if (id.init) {
+            std::cerr << " = ";
+            id.init->dump();
+        }
+    }
+    int bp = 0;
 }

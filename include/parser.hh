@@ -3,6 +3,7 @@
 
 #include "token.hh"
 #include "buffer.hh"
+#include "type.hh"
 
 #include <memory>
 #include <vector>
@@ -267,10 +268,13 @@ namespace parse {
         bool has_next_token() const;
         const ruleset& rules() const;
         bool is_typedef_name(string_view name) const;
+        const sem::type* get_typedef_type(string_view name) const;
         void push_ruleset(bool declarator);
         void pop_ruleset();
-        bool is_declarator_ahead() const;
+        bool could_be_expr_ahead() const;
         bool is_parsing_declarator() const;
+
+        sem::type_manager tm;
     private:
         template<typename T>
         const T* find_rule(const token& tok, const rule_map<T>& rules) {
@@ -290,7 +294,7 @@ namespace parse {
         const std::vector<token>& tokens;
         std::size_t next_token = 0;
 
-        std::set<string_view> typedef_names;
+        std::map<string_view, const sem::type*> typedef_names;
         std::stack<bool> use_declarator_ruleset;
     };
 }

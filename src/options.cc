@@ -86,6 +86,11 @@ namespace options {
         state.debug_string_to_parse = *arg + "\n";
     }
 
+    void handle_debug_scratch(std::string, optional<std::string> arg) {
+        state.mode = run_mode::debug_scratch;
+        if (arg) state.debug_string_to_parse = *arg + "\n";
+    }
+
     void register_options() {
         assert(options.empty() && "options already registered");
         register_option({
@@ -177,6 +182,13 @@ namespace options {
             handle_parse_expr,
             true, true,
             "(debug) parse an expression",
+            {}
+        });
+        register_option({
+            {}, "debug-scratch",
+            handle_debug_scratch,
+            true, false,
+            "(debug) scratch space",
             {}
         });
     }

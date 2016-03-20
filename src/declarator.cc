@@ -1,13 +1,13 @@
 #include "declarator.hh"
 #include "util.hh"
 #include "diagnostic.hh"
+#include "parse_expr.hh"
 
 using diagnostic::diagnose;
 
 enum declarator_precedence {
     dp_pointer = 1000,
-    dp_pre_qual = 1000,
-    dp_type_spec = 1000,
+    dp_qual = 1000,
 };
 
 static bool is_type_qualifier(keyword kw) {
@@ -16,48 +16,6 @@ static bool is_type_qualifier(keyword kw) {
         case kw_const:
         case kw_volatile:
         case kw_restrict:
-            return true;
-        default:
-            return false;
-    }
-}
-
-static bool is_simple_type_spec(keyword kw) {
-    switch (kw) {
-        case kw_void:
-        case kw_short:
-        case kw_int:
-        case kw_long:
-        case kw_float:
-        case kw_double:
-        case kw_signed:
-        case kw_unsigned:
-        case kw_Bool:
-        case kw_Complex:
-            return true;
-        default:
-            return false;
-    }
-}
-
-static bool is_storage_class_spec(keyword kw) {
-    switch (kw) {
-        case kw_typedef:
-        case kw_extern:
-        case kw_static:
-        case kw_Thread_local:
-        case kw_auto:
-        case kw_register:
-            return true;
-        default:
-            return false;
-    }
-}
-
-static bool is_function_specifier(keyword kw) {
-    switch (kw) {
-        case kw_inline:
-        case kw_Noreturn:
             return true;
         default:
             return false;
@@ -107,32 +65,32 @@ namespace parse {
                                                        tok, end);
     }
 
-    node_ptr tag_rule::parse(parser& p, token tok) const {
-        optional<token> ident;
-        if (p.peek().is(token::identifier)) {
-            ident = p.next();
-        }
-        std::vector<node_ptr> body;
-        optional<token> rbrace;
-        if (p.peek().is(punctuator::curly_left)) {
-            p.next();
-            while (!p.peek().is(punctuator::curly_right)) {
-                auto child = p.parse(0);
-                if (p.peek().is(punctuator::semicolon)) p.next();
-                else {
-                    diagnose(diagnostic::id::pp7_expected_semicolon,
-                             p.peek().range.first);
+    std::vector<init_declarator> parse_init_declarator_list(parser& p) {
+        std::vector<init_declarator> declarators;
+        bool first = true;
+        while (!p.peek().is(punctuator::semicolon)) {
+            if (!first) {
+                if (p.peek().is(punctuator::comma)) {
+                    p.next();
+                } else {
+                    diagnose(diagnostic::id::pp7_expected_token,
+                             p.peek().range.first, ",");
                 }
-                body.push_back(std::move(child));
             }
-            assert(p.peek().is(punctuator::curly_right));
-            rbrace = p.next();
-        } else if (!ident) {
-            diagnose(diagnostic::id::pp7_expected_ident_or_body,
-                     p.peek().range.first);
+            first = false;
+            init_declarator id;
+            p.push_ruleset(true);
+            id.declarator = p.parse(0);
+            p.pop_ruleset();
+            if (p.peek().is(punctuator::equal)) {
+                p.next();
+                p.push_ruleset(false);
+                id.init = p.parse(ep_comma);
+                p.pop_ruleset();
+            }
+            declarators.push_back(std::move(id));
         }
-        return std::make_unique<tag_node>(tok, ident, rbrace,
-                                          std::move(body), p.parse(0));
+        return declarators;
     }
 }
 
@@ -140,16 +98,10 @@ parse::ruleset parse::declarator_ruleset = {
     {
         {
             +[](const token& tok, parser& p) -> bool {
-                if (tok.is(token::identifier)) {
-                    if (p.is_typedef_name(tok.spelling)) return true;
-                }
                 if (!tok.is(token::keyword)) return false;
-                return is_simple_type_spec(tok.kw) ||
-                       is_storage_class_spec(tok.kw) ||
-                       is_type_qualifier(tok.kw) ||
-                       is_function_specifier(tok.kw);
+                return is_type_qualifier(tok.kw);
             },
-            new parse::unary_prefix_rule(dp_type_spec)
+            new parse::unary_prefix_rule(dp_qual)
         },
         {
             +[](const token& tok, parser& p) -> bool {
@@ -176,14 +128,6 @@ parse::ruleset parse::declarator_ruleset = {
                        tok.is(punctuator::square_right);
             },
             new parse::abstract_placeholder_rule
-        },
-        {
-            +[](const token& tok, parser& p) -> bool {
-                return tok.is(kw_struct) ||
-                       tok.is(kw_union) ||
-                       tok.is(kw_enum);
-            },
-            new parse::tag_rule
         },
     },
     {

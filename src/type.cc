@@ -101,6 +101,64 @@ namespace sem {
         return is_object_type() && !is_complete_object_type();
     }
 
+    std::string type::to_string() const {
+        std::string result;
+        switch (kind) {
+            case tk_void:
+                result = "void";
+                break;
+            case tk_integer: {
+                std::string sign;
+                if (!is_signed) sign = "unsigned ";
+                switch (int_kind) {
+                    case ik_int:
+                        result = sign + "int";
+                        break;
+                    case ik_bool:
+                        result = "_Bool";
+                        break;
+                    case ik_char:
+                        result = sign + "char";
+                        break;
+                    case ik_long:
+                        result = sign + "long";
+                        break;
+                    case ik_long_long:
+                        result = sign + "long long";
+                        break;
+                    case ik_short:
+                        result = sign + "short";
+                        break;
+                }
+                break;
+            }
+            case tk_real_floating:
+                switch (float_kind) {
+                    case fk_float:
+                        result = "float";
+                        break;
+                    case fk_double:
+                        result = "double";
+                        break;
+                    case fk_long_double:
+                        result = "long double";
+                        break;
+                }
+                break;
+            case tk_pointer: {
+                if (pointee_type->type_kind() == tk_function) {
+                    assert(false); // TODO
+                } else {
+                    result = pointee_type->to_string() + "*";
+                }
+            }
+            default:
+                result = "???";
+                break;
+        }
+        return result;
+    }
+
     using tm = type_manager;
 
     type_manager::type_manager() {

@@ -6,6 +6,7 @@ include_directories(
 set(SOURCE
     src/buffer.cc
     src/decl.cc
+    src/decl_spec.cc
     src/declarator.cc
     src/diagnostic.cc
     src/expr.cc
@@ -25,6 +26,7 @@ set(SOURCE
 set(INCLUDE
     include/buffer.hh
     include/decl.hh
+    include/decl_spec.hh
     include/declarator.hh
     include/diagnostic.hh
     include/expr.hh

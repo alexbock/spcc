@@ -7,12 +7,6 @@
 #include <memory>
 
 namespace sem {
-    enum qualifier {
-        qual_const    = 1 << 0,
-        qual_volatile = 1 << 1,
-        qual_restrict = 1 << 2,
-    };
-
     enum type_kind {
         tk_void,
         tk_integer,
@@ -22,7 +16,6 @@ namespace sem {
         tk_function,
         tk_structure,
         tk_union,
-        tk_atomic,
         tk_array,
         tk_enum,
     };
@@ -48,10 +41,6 @@ namespace sem {
         type(integer_kind int_kind, bool is_signed) :
         kind{tk_integer}, int_kind{int_kind}, is_signed{is_signed} { }
 
-        bool is_const() const { return quals & qual_const; }
-        bool is_volatile() const { return quals & qual_volatile; }
-        bool is_restrict() const { return quals & qual_restrict; }
-
         bool is_basic_type() const;
         bool is_arithmetic_type() const;
         bool is_real_type() const;
@@ -70,10 +59,11 @@ namespace sem {
         bool is_incomplete_object_type() const;
 
         enum type_kind type_kind() const { return kind; }
+
+        std::string to_string() const;
     private:
         friend class type_manager;
 
-        qualifier quals;
         enum type_kind kind;
 
         union {

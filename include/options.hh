@@ -13,6 +13,7 @@ namespace options {
         dump_config,
         debug_parse_declarator,
         debug_parse_expr,
+        debug_scratch,
         option_parsing_error,
     };
 

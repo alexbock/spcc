@@ -56,59 +56,18 @@ namespace parse {
         token left, right;
     };
 
-    class tag_node : public node {
-    public:
-        tag_node(token tag, optional<token> ident, optional<token> rbrace,
-                 std::vector<node_ptr> body, node_ptr op) :
-        tag_{tag}, ident_{ident}, rbrace_{rbrace},
-        body_{std::move(body)}, op_{std::move(op)} { }
-
-        loc_range range() override {
-            auto begin = tag().range.first;
-            auto end = tag().range.second;
-            if (ident()) end = ident()->range.second;
-            if (rbrace_) end = rbrace_->range.second;
-            return { begin, end };
-        }
-
-        const token& tag() const { return tag_; }
-        const optional<token>& ident() const { return ident_; }
-        const std::vector<node_ptr>& body() const { return body_; }
-        const node& operand() const { return *op_; }
-    private:
-        std::string get_dump_info() const override {
-            auto result = "TAG " + tag().spelling.to_string();
-            if (ident()) {
-                result += " " + ident()->spelling.to_string();
-            }
-            return result;
-        }
-        std::vector<const node*> children() const override {
-            std::vector<const node*> result;
-            for (const auto& child : body()) {
-                result.push_back(child.get());
-            }
-            result.push_back(&operand());
-            return result;
-        }
-
-        token tag_;
-        optional<token> ident_;
-        optional<token> rbrace_;
-        std::vector<node_ptr> body_;
-        node_ptr op_;
-    };
-
     class declarator_array_rule : public infix_rule {
     public:
         node_ptr parse(parser&, node_ptr, token) const override;
         int precedence() const override { return INT_MAX; }
     };
 
-    class tag_rule : public prefix_rule {
-    public:
-        node_ptr parse(parser&, token) const override;
+    struct init_declarator {
+        node_ptr declarator;
+        node_ptr init;
     };
+
+    std::vector<init_declarator> parse_init_declarator_list(parser&);
 }
 
 #endif

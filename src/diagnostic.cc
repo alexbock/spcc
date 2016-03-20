@@ -338,6 +338,22 @@ namespace diagnostic {
             }
         },
         {
+            id::pp7_invalid_decl_spec_type,
+            {
+                "invalid combination of type specifiers",
+                {},
+                category::error
+            }
+        },
+        {
+            id::pp7_expected_token,
+            {
+                "expected token %%",
+                {},
+                category::error
+            }
+        },
+        {
             id::translation_limit_exceeded,
             {
                 "minimum translation limit exceeded: %% %%",
