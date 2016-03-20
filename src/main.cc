@@ -20,7 +20,7 @@ using namespace platform::stream;
 static void show_help();
 static void show_version();
 static void process_input_files();
-static void debug_parse_declarator();
+static void debug_parse();
 
 int main(int argc, char** argv) {
     options::parse(argc, argv);
@@ -43,7 +43,8 @@ int main(int argc, char** argv) {
             options::dump();
             break;
         case options::run_mode::debug_parse_declarator:
-            debug_parse_declarator();
+        case options::run_mode::debug_parse_expr:
+            debug_parse();
             break;
     }
     return options::state.exit_code;
@@ -105,8 +106,12 @@ void process_input_files() {
     }
 }
 
-void debug_parse_declarator() {
-    const auto& data = options::state.debug_declarator_to_parse;
+void debug_parse() {
+    bool is_declarator = true;
+    if (options::state.mode == options::run_mode::debug_parse_expr) {
+        is_declarator = false;
+    }
+    const auto& data = options::state.debug_string_to_parse;
     auto buf = std::make_unique<raw_buffer>("<debug>", data);
     auto post_p1 = pp::perform_phase_one(std::move(buf));
     auto post_p2 = pp::perform_phase_two(std::move(post_p1));
@@ -119,10 +124,8 @@ void debug_parse_declarator() {
     tokens = pp::perform_phase_seven(tokens);
 
     parse::parser p{tokens};
-    p.push_ruleset(true);
+    p.push_ruleset(is_declarator);
     auto node = p.parse(0);
     p.pop_ruleset();
     node->dump();
-    std::cout << "\npronounced as: ";
-    std::cout << parse::pronounce_declarator(*node) << "\n";
 }

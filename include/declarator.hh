@@ -45,7 +45,9 @@ namespace parse {
             return "ARRAY";
         }
         std::vector<const node*> children() const override {
-            return { lhs.get() };
+            std::vector<const node*> result = { lhs.get() };
+            if (sz) result.push_back(sz.get());
+            return result;
         }
 
         node_ptr lhs;
@@ -59,8 +61,6 @@ namespace parse {
         node_ptr parse(parser&, node_ptr, token) const override;
         int precedence() const override { return INT_MAX; }
     };
-
-    std::string pronounce_declarator(const node& root);
 }
 
 #endif

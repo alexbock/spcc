@@ -12,6 +12,7 @@ namespace options {
         run_tests,
         dump_config,
         debug_parse_declarator,
+        debug_parse_expr,
         option_parsing_error,
     };
 
@@ -32,7 +33,7 @@ namespace options {
         size_info sizes;
         bool is_char_signed = true;
 
-        std::string debug_declarator_to_parse;
+        std::string debug_string_to_parse;
     };
 
     extern config state;

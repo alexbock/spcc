@@ -78,7 +78,12 @@ namespace options {
 
     void handle_parse_declarator(std::string, optional<std::string> arg) {
         state.mode = run_mode::debug_parse_declarator;
-        state.debug_declarator_to_parse = *arg + "\n";
+        state.debug_string_to_parse = *arg + "\n";
+    }
+
+    void handle_parse_expr(std::string, optional<std::string> arg) {
+        state.mode = run_mode::debug_parse_expr;
+        state.debug_string_to_parse = *arg + "\n";
     }
 
     void register_options() {
@@ -165,6 +170,13 @@ namespace options {
             handle_parse_declarator,
             true, true,
             "(debug) parse a declarator",
+            {}
+        });
+        register_option({
+            {}, "parse-expr",
+            handle_parse_expr,
+            true, true,
+            "(debug) parse an expression",
             {}
         });
     }

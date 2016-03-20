@@ -5,9 +5,9 @@
 using diagnostic::diagnose;
 
 enum declarator_precedence {
-    dp_pointer = 100,
-    dp_pre_qual = 100,
-    dp_type_spec = 100,
+    dp_pointer = 1000,
+    dp_pre_qual = 1000,
+    dp_type_spec = 1000,
 };
 
 static bool is_type_qualifier(keyword kw) {
@@ -80,7 +80,9 @@ namespace parse {
         }
         node_ptr size = nullptr;
         if (!p.peek().is(punctuator::square_right)) {
-            // TODO try to parse an expression
+            p.push_ruleset(false);
+            size = p.parse(0);
+            p.pop_ruleset();
         }
         auto end = p.next();
         if (!end.is(punctuator::square_right)) {
@@ -91,54 +93,6 @@ namespace parse {
                                                        std::move(mods),
                                                        std::move(size),
                                                        tok, end);
-    }
-
-    std::string pronounce_declarator(const node& root) {
-        if (dynamic_cast<const abstract_placeholder_node*>(&root)) {
-            return "";
-        } else if (auto unary = dynamic_cast<const unary_node*>(&root)) {
-            if (unary->token().is(punctuator::star)) {
-                std::string result = pronounce_declarator(unary->operand());
-                result += "pointer to ";
-                return result;
-            } else if (unary->token().is(token::keyword) &&
-                       is_simple_type_spec(unary->token().kw)) {
-                std::string result = pronounce_declarator(unary->operand());
-                result += unary->token().spelling.to_string() + " ";
-                return result;
-            } else {
-                std::string result = pronounce_declarator(unary->operand());
-                result += unary->token().spelling.to_string() + " ";
-                return result;
-            }
-        } else if (auto call = dynamic_cast<const call_node*>(&root)) {
-            std::string result = pronounce_declarator(call->callee());
-            result += "function ";
-            if (!call->args().empty()) {
-                result += "(";
-                std::string comma = "";
-                for (const auto& arg : call->args()) {
-                    result += comma;
-                    comma = ", ";
-                    result += util::rtrim(pronounce_declarator(*arg));
-                }
-                result += ") ";
-            }
-            result += "returning ";
-            return result;
-        } else if (auto tn = dynamic_cast<const token_node*>(&root)) {
-            auto result = tn->token().spelling.to_string();
-            if (result != "...") result += " is ";
-            return result;
-        } else if (auto p = dynamic_cast<const paren_node*>(&root)) {
-            return pronounce_declarator(p->operand());
-        } else if (auto a = dynamic_cast<const declarator_array_node*>(&root)) {
-            std::string result = pronounce_declarator(a->base());
-            result += "array of ";
-            return result;
-        } else {
-            return " ??? ";
-        }
     }
 }
 

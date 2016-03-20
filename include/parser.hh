@@ -284,6 +284,7 @@ namespace parse {
             return match;
         }
         int precedence_peek() noexcept(false);
+        bool is_parsing_declarator() const;
 
         const std::vector<token>& tokens;
         std::size_t next_token = 0;

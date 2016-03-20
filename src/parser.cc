@@ -120,7 +120,7 @@ namespace parse {
     }
 
     const ruleset& parser::rules() const {
-        return declarator_ruleset; // TODO
+        return is_parsing_declarator() ? declarator_ruleset : expr_ruleset;
     }
 
     bool parser::is_typedef_name(string_view name) const {
@@ -140,5 +140,10 @@ namespace parse {
         if (!has_next_token()) return 0;
         auto in_rule = find_rule(peek(), rules().infix_rules);
         return in_rule ? in_rule->precedence() : 0;
+    }
+
+    bool parser::is_parsing_declarator() const {
+        assert(!use_declarator_ruleset.empty());
+        return use_declarator_ruleset.top();
     }
 }

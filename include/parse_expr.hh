@@ -4,7 +4,7 @@
 #include "parser.hh"
 
 namespace parse {
-
+    extern ruleset expr_ruleset;
 }
 
 #endif
