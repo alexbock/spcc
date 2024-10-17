@@ -12,6 +12,8 @@
 #include <set>
 #include <cstddef>
 #include <stack>
+#include <string>
+#include <string_view>
 
 namespace parse {
     class parser;
@@ -35,7 +37,7 @@ namespace parse {
         const struct token& token() const { return tok; }
     private:
         std::string get_dump_info() const override {
-            return "TOKEN " + tok.spelling.to_string();
+            return "TOKEN " + std::string(tok.spelling);
         }
         std::vector<const node*> children() const override {
             return {};
@@ -57,7 +59,7 @@ namespace parse {
         bool is_prefix() const { return prefix; }
     private:
         std::string get_dump_info() const override {
-            auto result =  "UNARY " + tok.spelling.to_string();
+            auto result =  "UNARY " + std::string(tok.spelling);
             result += prefix ? " prefix" : " postfix";
             return result;
         }
@@ -107,7 +109,7 @@ namespace parse {
         const node& rhs() const { return *right; }
     private:
         std::string get_dump_info() const override {
-            return "BINARY " + tok.spelling.to_string();
+            return "BINARY " + std::string(tok.spelling);
         }
         std::vector<const node*> children() const override {
             return { left.get(), right.get() };
@@ -134,8 +136,8 @@ namespace parse {
         const node& third_operand() const { return *op3; }
     private:
         std::string get_dump_info() const override {
-            auto result = "TERNARY " + tok1.spelling.to_string();
-            result += " " + tok2.spelling.to_string();
+            auto result = "TERNARY " + std::string(tok1.spelling);
+            result += " " + std::string(tok2.spelling);
             return result;
         }
         std::vector<const node*> children() const override {
@@ -267,8 +269,8 @@ namespace parse {
         void rewind();
         bool has_next_token() const;
         const ruleset& rules() const;
-        bool is_typedef_name(string_view name) const;
-        const sem::type* get_typedef_type(string_view name) const;
+        bool is_typedef_name(std::string_view name) const;
+        const sem::type* get_typedef_type(std::string_view name) const;
         void push_ruleset(bool declarator);
         void pop_ruleset();
         bool could_be_expr_ahead() const;
@@ -294,7 +296,7 @@ namespace parse {
         const std::vector<token>& tokens;
         std::size_t next_token = 0;
 
-        std::map<string_view, const sem::type*> typedef_names;
+        std::map<std::string_view, const sem::type*> typedef_names;
         std::stack<bool> use_declarator_ruleset;
     };
 }

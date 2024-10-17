@@ -1,10 +1,10 @@
 #ifndef SPCC_DECL_HH
 #define SPCC_DECL_HH
 
-#include "string_view.hh"
 #include "token.hh"
 #include "buffer.hh"
 
+#include <string_view>
 #include <vector>
 #include <memory>
 #include <cstddef>
@@ -14,7 +14,7 @@ namespace sem {
 
     class decl {
     public:
-        string_view name() const { return identifier.spelling; }
+        std::string_view name() const { return identifier.spelling; }
         location loc() const { return identifier.range.first; }
         void dump() const;
         virtual ~decl() = 0;

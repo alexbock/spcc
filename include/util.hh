@@ -1,18 +1,18 @@
 #ifndef SPCC_UTIL_HH
 #define SPCC_UTIL_HH
 
-#include "string_view.hh"
-
 #include <cstring>
 #include <cstdint>
 #include <cassert>
+#include <string>
+#include <string_view>
 
 namespace util {
-    inline bool starts_with(string_view haystack, string_view needle) {
+    inline bool starts_with(std::string_view haystack, std::string_view needle) {
         return haystack.substr(0, needle.size()) == needle;
     }
 
-    inline bool ends_with(string_view haystack, string_view needle) {
+    inline bool ends_with(std::string_view haystack, std::string_view needle) {
         if (needle.size() > haystack.size()) return false;
         return haystack.substr(haystack.size() - needle.size()) == needle;
     }

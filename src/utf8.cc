@@ -38,14 +38,14 @@ bool utf8::is_continuation(unsigned char c) {
     return c >> 6U == 0b10U;
 }
 
-optional<std::size_t> utf8::measure_code_point(string_view str) {
+std::optional<std::size_t> utf8::measure_code_point(std::string_view str) {
     if (str.empty()) return {};
     else if (is_ascii(str[0])) return 1;
     else if (is_leader(str[0])) return active_high_bits[(unsigned char)str[0]];
     else return {};
 }
 
-optional<std::uint32_t> utf8::code_point_to_utf32(string_view str) {
+std::optional<std::uint32_t> utf8::code_point_to_utf32(std::string_view str) {
     const auto count = measure_code_point(str);
     if (!count) return {};
     std::uint32_t result = 0;

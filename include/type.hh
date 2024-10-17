@@ -5,6 +5,7 @@
 
 #include <unordered_map>
 #include <memory>
+#include <string>
 
 namespace sem {
     enum type_kind {

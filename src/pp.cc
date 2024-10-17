@@ -2,13 +2,13 @@
 #include "utf8.hh"
 #include "diagnostic.hh"
 #include "util.hh"
-#include "optional.hh"
 
 #include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <optional>
 #include <set>
 
 using diagnostic::diagnose;
@@ -59,7 +59,7 @@ std::unique_ptr<buffer> pp::perform_phase_one(std::unique_ptr<buffer> in) {
         }
         // replace trigraph sequences with corresponding single-character
         // internal representations
-        auto trigraph = trigraphs.find(out->peek().substr(0, 3).to_string());
+        auto trigraph = trigraphs.find(std::string(out->peek().substr(0, 3)));
         if (trigraph != trigraphs.end()) {
             out->replace(3, trigraph->second);
             continue;
@@ -106,7 +106,7 @@ std::unique_ptr<buffer> pp::perform_phase_two(std::unique_ptr<buffer> in) {
     return std::move(out);
 }
 
-string_view pp::lexer::peek() const {
+std::string_view pp::lexer::peek() const {
     return buf.data().substr(index_);
 }
 
@@ -147,7 +147,7 @@ bool pp::lexer::allow_header_name() const {
     return found_include && found_hash;
 }
 
-optional<token> pp::lexer::try_lex(token_kind kind, const std::regex& regex) {
+std::optional<token> pp::lexer::try_lex(token_kind kind, const std::regex& regex) {
     if (kind == token::header_name && !allow_header_name()) return {};
     std::cmatch match;
     bool matched = std::regex_search(
@@ -225,7 +225,7 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
         // clean up and diagnose chosen token
         auto tok = lexes[0];
         if (tok.is(token::punctuator)) {
-            auto it = punctuator_table.find(tok.spelling.to_string());
+            auto it = punctuator_table.find(std::string(tok.spelling));
             assert(it != punctuator_table.end()); // table doesn't match regex
             tok.punc = it->second;
         } else if (tok.is(token::space)) {
@@ -244,8 +244,8 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
              sequence between the " delimiters, the behavior is undefined.
             */
             auto range = tok.spelling.substr(1, tok.spelling.size() - 2);
-            // TODO implement find for string_view to avoid this allocation
-            auto haystack = range.to_string();
+            // TODO implement find for std::string_view to avoid this allocation
+            auto haystack = std::string(range);
             for (const auto seq : header_name_undef_seqs) {
                 auto pos = haystack.find(seq);
                 if (pos != std::string::npos) {
@@ -264,7 +264,7 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
 
 using p4m = pp::phase_four_manager;
 
-optional<std::size_t> p4m::find(ws_mode space, ws_mode newline) {
+std::optional<std::size_t> p4m::find(ws_mode space, ws_mode newline) {
     for (std::size_t offset = index; offset < tokens.size(); ++offset) {
         auto tok = tokens[offset];
         if (tok.is(token::space) || tok.is(token::newline)) {
@@ -279,13 +279,13 @@ optional<std::size_t> p4m::find(ws_mode space, ws_mode newline) {
     return {};
 }
 
-optional<token> p4m::peek(ws_mode space, ws_mode newline) {
+std::optional<token> p4m::peek(ws_mode space, ws_mode newline) {
     auto offset = find(space, newline);
     if (offset) return tokens[*offset];
     else return {};
 }
 
-optional<token> p4m::get(ws_mode space, ws_mode newline) {
+std::optional<token> p4m::get(ws_mode space, ws_mode newline) {
     auto offset = find(space, newline);
     if (offset) {
         index = *offset + 1;
@@ -336,7 +336,7 @@ void p4m::maybe_diagnose_macro_redefinition(const macro& def) const {
     }
 }
 
-optional<std::vector<token>> p4m::maybe_expand_macro() {
+std::optional<std::vector<token>> p4m::maybe_expand_macro() {
     auto next = peek(SKIP, SKIP);
     if (!next || !next->is(token::identifier) || next->blue) return {};
     auto loc = next->range.first;
@@ -439,7 +439,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
         // TODO diagnose UB for apparent directives in macro args [6.10.3]/11
 
         // replace parameter names and handle #
-        auto get_arg = [&](string_view name) -> optional<std::size_t> {
+        auto get_arg = [&](std::string_view name) -> std::optional<std::size_t> {
             if (name == "__VA_ARGS__" && mac.variadic) {
                 return mac.param_names.size();
             }
@@ -497,7 +497,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                              tok.range.first);
                 }
             } else if (tok.is(punctuator::hash)) {
-                optional<std::size_t> index;
+                std::optional<std::size_t> index;
                 if (auto next = peek(SKIP, SKIP)) {
                     if (next->is(token::identifier)) {
                         index = get_arg(next->spelling);
@@ -521,7 +521,7 @@ optional<std::vector<token>> p4m::maybe_expand_macro() {
                             data += " ";
                             last_was_space = true;
                         }
-                    } else if (!needs_escape) data += tok.spelling.to_string();
+                    } else if (!needs_escape) data += std::string(tok.spelling);
                     else {
                         for (char c : tok.spelling) {
                             if (c == '"') data += "\\\"";
@@ -618,8 +618,8 @@ std::vector<token> p4m::handle_concatenation(std::vector<token> in) {
                      with the following preprocessing token
                     */
                     std::string data;
-                    data += lhs.spelling.to_string();
-                    data += rhs.spelling.to_string();
+                    data += std::string(lhs.spelling);
+                    data += std::string(rhs.spelling);
                     auto buf = std::make_unique<raw_buffer>("<concatenated>",
                                                             data);
                     auto tokens = perform_phase_three(*buf);
@@ -702,7 +702,7 @@ void p4m::make_predefined_macro(std::string name, std::string body) {
 }
 
 token p4m::make_file_token(token at) {
-    auto name = at.range.first.buffer().name().to_string();
+    auto name = std::string(at.range.first.buffer().name());
     name = "\"" + name + "\"";
     auto buf = std::make_unique<raw_buffer>("<predefined>",
                                             name);
@@ -748,7 +748,7 @@ void p4m::handle_error_directive() {
     std::string msg;
     for (auto tok : tokens) {
         if (tok.is(token::space)) msg += " ";
-        else msg += tok.spelling.to_string();
+        else msg += std::string(tok.spelling);
     }
     msg = util::ltrim(util::rtrim(msg));
     const auto loc = error_tok.range.first;
@@ -905,7 +905,7 @@ void p4m::handle_include_directive() {
         auto hn = get(SKIP, STOP);
         finish_directive_line(include_tok);
         auto fname = hn->spelling.substr(1, hn->spelling.size() - 2);
-        std::ifstream file{fname.to_string()};
+        std::ifstream file{std::string(fname)};
         if (!file.good()) {
             diagnose(diagnostic::id::cannot_open_file, {}, fname);
             return;
@@ -915,7 +915,7 @@ void p4m::handle_include_directive() {
         auto data = ss.str();
         ss.clear();
 
-        auto buf = std::make_unique<raw_buffer>(fname.to_string(), data);
+        auto buf = std::make_unique<raw_buffer>(std::string(fname), data);
         buf->mark_included_at(include_tok.range.first);
         auto post_p1 = pp::perform_phase_one(std::move(buf));
         auto post_p2 = pp::perform_phase_two(std::move(post_p1));
@@ -1005,7 +1005,7 @@ void p4m::handle_non_directive() {
 
 std::vector<token> p4m::process(bool in_arg) {
     bool allow_directive = !in_arg;
-    std::map<string_view, std::size_t> exp_end;
+    std::map<std::string_view, std::size_t> exp_end;
     while (index < tokens.size()) {
         auto next = *peek(TAKE, TAKE);
         if (next.is(token::newline)) {
@@ -1093,7 +1093,7 @@ std::vector<token> p4m::process(bool in_arg) {
     return std::move(out);
 }
 
-optional<token> pp::convert_pp_token_to_token(token tok) {
+std::optional<token> pp::convert_pp_token_to_token(token tok) {
     switch (tok.kind) {
         case token::keyword:
         case token::floating_constant:
@@ -1119,7 +1119,7 @@ optional<token> pp::convert_pp_token_to_token(token tok) {
                          tok.range.first);
                 return {};
             }
-            auto it = keyword_table.find(tok.spelling.to_string());
+            auto it = keyword_table.find(std::string(tok.spelling));
             if (it != keyword_table.end()) {
                 tok.kind = token::keyword;
                 tok.kw = it->second;
@@ -1225,7 +1225,7 @@ std::vector<token> pp::perform_phase_six(std::vector<token> tokens,
             // create a new string literal
             std::string new_body;
             for (const auto& strlit : string_literals) {
-                new_body += analyze_string_literal(strlit).body.to_string();
+                new_body += std::string(analyze_string_literal(strlit).body);
             }
             new_body = "\"" + new_body + "\"";
             new_body = to_string(encoding) + new_body;

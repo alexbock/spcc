@@ -34,7 +34,7 @@ void location::add_expansion_entry(location loc, std::size_t depth) {
     else expanded_from = std::make_shared<location>(loc);
 }
 
-string_view derived_buffer::peek() const {
+std::string_view derived_buffer::peek() const {
     return parent()->data().substr(index_);
 }
 
@@ -43,7 +43,7 @@ void derived_buffer::propagate(std::size_t len) {
         // combine with previous propagate fragment
         fragments_.back().local_range.second += len;
         fragments_.back().parent_range.second += len;
-        data_ += peek().substr(0, len).to_string();
+        data_ += std::string(peek().substr(0, len));
         index_ += len;
         return;
     }
@@ -53,21 +53,21 @@ void derived_buffer::propagate(std::size_t len) {
         { index_, index_ + len },
         true
     });
-    data_ += peek().substr(0, len).to_string();
+    data_ += std::string(peek().substr(0, len));
     index_ += len;
 }
 
-void derived_buffer::replace(std::size_t len, string_view str) {
+void derived_buffer::replace(std::size_t len, std::string_view str) {
     fragments_.push_back({
         { data().size(), data().size() + str.size() },
         { index_, index_ + len },
         false
     });
     index_ += len;
-    data_ += str.to_string();
+    data_ += std::string(str);
 }
 
-void derived_buffer::insert(string_view data) {
+void derived_buffer::insert(std::string_view data) {
     replace(0, data);
 }
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 project(spcc)
 include_directories(
     include
@@ -31,9 +31,7 @@ set(INCLUDE
     include/diagnostic.hh
     include/expr.hh
     include/keyword.hh
-    include/optional.hh
     include/options.hh
-    include/string_view.hh
     include/test.hh
     include/token.hh
     include/type.hh
@@ -49,4 +47,4 @@ add_executable(spcc
     ${SOURCE}
     ${INCLUDE}
 )
-set_property(TARGET spcc PROPERTY CXX_STANDARD 14)
+set_property(TARGET spcc PROPERTY CXX_STANDARD 20)

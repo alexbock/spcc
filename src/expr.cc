@@ -36,7 +36,7 @@ namespace sem {
         return str_tok.range;
     }
 
-    string_view string_literal_expr::body() const {
+    std::string_view string_literal_expr::body() const {
         return pp::analyze_string_literal(str_tok).body;
     }
 
@@ -45,7 +45,7 @@ namespace sem {
     }
 
     std::string string_literal_expr::get_dump_info() const {
-        return str_tok.spelling.to_string();
+        return std::string(str_tok.spelling);
     }
 
     std::vector<const expr*> string_literal_expr::children() const {

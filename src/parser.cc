@@ -147,11 +147,11 @@ namespace parse {
         return is_parsing_declarator() ? declarator_ruleset : expr_ruleset;
     }
 
-    bool parser::is_typedef_name(string_view name) const {
+    bool parser::is_typedef_name(std::string_view name) const {
         return typedef_names.count(name);
     }
 
-    const sem::type* parser::get_typedef_type(string_view name) const {
+    const sem::type* parser::get_typedef_type(std::string_view name) const {
         assert(is_typedef_name(name));
         return typedef_names.find(name)->second;
     }

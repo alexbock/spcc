@@ -2,12 +2,13 @@
 #define SPCC_DIAGNOSTIC_HH
 
 #include "buffer.hh"
-#include "string_view.hh"
-#include "optional.hh"
 
 #include <string>
 #include <vector>
 #include <utility>
+#include <string>
+#include <string_view>
+#include <optional>
 
 namespace diagnostic {
     enum class category {
@@ -87,8 +88,8 @@ namespace diagnostic {
         return s;
     }
 
-    inline std::string to_string(string_view v) {
-        return v.to_string();
+    inline std::string to_string(std::string_view v) {
+        return std::string(v);
     }
 
     template<typename... T>
@@ -99,13 +100,13 @@ namespace diagnostic {
         return format_diagnostic_message(pattern, std::move(args));
     }
 
-    void emit_diagnostic(const info&, optional<location>,
+    void emit_diagnostic(const info&, std::optional<location>,
                          const std::string& msg);
 
     std::pair<std::size_t, std::size_t> compute_line_col(location loc);
 
     template<typename... T>
-    void diagnose(id diag, optional<location> loc, T... t) {
+    void diagnose(id diag, std::optional<location> loc, T... t) {
         auto& info = find(diag);
         auto msg = format_diagnostic_message(info.pattern, t...);
         emit_diagnostic(info, loc, msg);

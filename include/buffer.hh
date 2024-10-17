@@ -1,22 +1,21 @@
 #ifndef SPCC_BUFFER_HH
 #define SPCC_BUFFER_HH
 
-#include "string_view.hh"
-#include "optional.hh"
-
 #include <utility>
 #include <cstddef>
 #include <memory>
+#include <optional>
+#include <string_view>
 #include <vector>
 
 class buffer {
 public:
-    virtual string_view name() const = 0;
-    virtual string_view data() const = 0;
+    virtual std::string_view name() const = 0;
+    virtual std::string_view data() const = 0;
     virtual const buffer* parent() const = 0;
-    virtual string_view original_data() const = 0;
+    virtual std::string_view original_data() const = 0;
     virtual std::size_t offset_in_original(std::size_t offset) const = 0;
-    virtual optional<class location> included_at() const = 0;
+    virtual std::optional<class location> included_at() const = 0;
     virtual ~buffer() { }
 };
 
@@ -45,14 +44,14 @@ public:
     raw_buffer(std::string name, std::string data) :
     name_(std::move(name)), data_(std::move(data)) { }
 
-    string_view name() const override { return name_; }
-    string_view data() const override { return data_; }
+    std::string_view name() const override { return name_; }
+    std::string_view data() const override { return data_; }
     const buffer* parent() const override { return nullptr; }
-    string_view original_data() const override { return data_; };
+    std::string_view original_data() const override { return data_; };
     std::size_t offset_in_original(std::size_t offset) const override {
         return offset;
     }
-    optional<class location> included_at() const override {
+    std::optional<class location> included_at() const override {
         return included_at_;
     }
 
@@ -60,7 +59,7 @@ public:
 private:
     std::string name_;
     std::string data_;
-    optional<location> included_at_;
+    std::optional<location> included_at_;
 };
 
 class derived_buffer : public buffer {
@@ -68,19 +67,19 @@ public:
     derived_buffer(std::unique_ptr<const buffer> parent) :
     parent_(std::move(parent)) { }
 
-    string_view name() const override { return parent_->name(); }
-    string_view data() const override { return data_; }
+    std::string_view name() const override { return parent_->name(); }
+    std::string_view data() const override { return data_; }
     const buffer* parent() const override { return parent_.get(); }
-    string_view original_data() const override {
+    std::string_view original_data() const override {
         return parent_->original_data();
     };
     std::size_t offset_in_original(std::size_t offset) const override;
-    optional<class location> included_at() const override { return {}; }
+    std::optional<class location> included_at() const override { return {}; }
 
-    string_view peek() const;
+    std::string_view peek() const;
     void propagate(std::size_t len);
-    void replace(std::size_t len, string_view data);
-    void insert(string_view data);
+    void replace(std::size_t len, std::string_view data);
+    void insert(std::string_view data);
     void erase(std::size_t len);
     bool done() const;
     std::size_t parent_index() const { return index_; }

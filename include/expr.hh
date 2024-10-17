@@ -24,7 +24,7 @@ namespace sem {
     class string_literal_expr : public expr {
     public:
         std::pair<location, location> range() const override;
-        string_view body() const;
+        std::string_view body() const;
     private:
         std::string get_dump_name() const override;
         std::string get_dump_info() const override;

@@ -2,11 +2,11 @@
 #define SPCC_TOKEN_HH
 
 #include "buffer.hh"
-#include "string_view.hh"
 #include "punctuator.hh"
-#include "optional.hh"
 #include "keyword.hh"
 
+#include <optional>
+#include <string_view>
 #include <utility>
 #include <regex>
 
@@ -34,7 +34,7 @@ struct token {
         integer_constant,
     };
 
-    token(token_kind kind, string_view spelling,
+    token(token_kind kind, std::string_view spelling,
           std::pair<location, location> range) :
     kind(kind), spelling(spelling), range(range) { }
 
@@ -58,7 +58,7 @@ struct token {
     }
 
     token_kind kind;
-    string_view spelling;
+    std::string_view spelling;
     std::pair<location, location> range;
     union {
         enum punctuator punc;

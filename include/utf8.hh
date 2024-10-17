@@ -1,18 +1,17 @@
 #ifndef SPCC_UTF8_HH
 #define SPCC_UTF8_HH
 
-#include "string_view.hh"
-#include "optional.hh"
-
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <string_view>
 
 namespace utf8 {
     bool is_ascii(unsigned char);
     bool is_leader(unsigned char);
     bool is_continuation(unsigned char);
-    optional<std::size_t> measure_code_point(string_view);
-    optional<std::uint32_t> code_point_to_utf32(string_view);
+    std::optional<std::size_t> measure_code_point(std::string_view);
+    std::optional<std::uint32_t> code_point_to_utf32(std::string_view);
     std::string utf32_to_ucn(std::uint32_t);
 }
 

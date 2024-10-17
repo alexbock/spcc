@@ -1,5 +1,6 @@
 #include "pp.hh"
 
+#include <cassert>
 #include <map>
 #include <string>
 

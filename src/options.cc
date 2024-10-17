@@ -1,6 +1,5 @@
 #include "options.hh"
 #include "util.hh"
-#include "optional.hh"
 #include "diagnostic.hh"
 
 #include <utility>
@@ -8,6 +7,7 @@
 #include <map>
 #include <cstdlib>
 #include <iostream>
+#include <optional>
 
 using util::starts_with;
 using diagnostic::diagnose;
@@ -18,7 +18,7 @@ namespace options {
     struct option {
         std::string short_form; // optional
         std::string long_form; // mandatory
-        void (*handler)(std::string, optional<std::string> arg);
+        void (*handler)(std::string, std::optional<std::string> arg);
         bool allow_arg = false;
         bool require_arg = false;
         std::string description;
@@ -38,20 +38,20 @@ namespace options {
         options[opt.long_form] = std::move(opt);
     }
 
-    void handle_help(std::string, optional<std::string>) {
+    void handle_help(std::string, std::optional<std::string>) {
         state.mode = run_mode::show_help;
     }
 
-    void handle_version(std::string, optional<std::string>) {
+    void handle_version(std::string, std::optional<std::string>) {
         state.mode = run_mode::show_version;
     }
 
-    void handle_test(std::string, optional<std::string>) {
+    void handle_test(std::string, std::optional<std::string>) {
         state.mode = run_mode::run_tests;
     }
 
     template<unsigned size_info::*Size>
-    void handle_any_size_option(std::string opt, optional<std::string> arg) {
+    void handle_any_size_option(std::string opt, std::optional<std::string> arg) {
         auto sz = std::atoi(arg->c_str());
         if (sz <= 0) {
             diagnose(diagnostic::id::invalid_option, {},
@@ -62,7 +62,7 @@ namespace options {
         state.sizes.*Size = sz;
     }
 
-    void handle_char(std::string opt, optional<std::string> arg) {
+    void handle_char(std::string opt, std::optional<std::string> arg) {
         if (*arg == "signed") state.is_char_signed = true;
         else if (*arg == "unsigned") state.is_char_signed = false;
         else {
@@ -72,21 +72,21 @@ namespace options {
         }
     }
 
-    void handle_dump_config(std::string, optional<std::string>) {
+    void handle_dump_config(std::string, std::optional<std::string>) {
         state.mode = run_mode::dump_config;
     }
 
-    void handle_parse_declarator(std::string, optional<std::string> arg) {
+    void handle_parse_declarator(std::string, std::optional<std::string> arg) {
         state.mode = run_mode::debug_parse_declarator;
         state.debug_string_to_parse = *arg + "\n";
     }
 
-    void handle_parse_expr(std::string, optional<std::string> arg) {
+    void handle_parse_expr(std::string, std::optional<std::string> arg) {
         state.mode = run_mode::debug_parse_expr;
         state.debug_string_to_parse = *arg + "\n";
     }
 
-    void handle_debug_scratch(std::string, optional<std::string> arg) {
+    void handle_debug_scratch(std::string, std::optional<std::string> arg) {
         state.mode = run_mode::debug_scratch;
         if (arg) state.debug_string_to_parse = *arg + "\n";
     }
@@ -203,7 +203,7 @@ void options::parse(int argc, char** argv) {
         if (state.mode == run_mode::option_parsing_error) return;
         if (starts_with(arg, "-")) {
             std::string long_form = "";
-            optional<std::string> opt_arg;
+            std::optional<std::string> opt_arg;
             if (starts_with(arg, "--")) {
                 long_form = arg.substr(2);
                 long_form = long_form.substr(0, long_form.find('='));

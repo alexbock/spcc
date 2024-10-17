@@ -3,6 +3,7 @@
 #include "options.hh"
 #include "utf8.hh"
 
+#include <cassert>
 #include <map>
 #include <iostream>
 
@@ -482,7 +483,7 @@ namespace diagnostic {
         reset_attributes(stdout);
     }
 
-    std::string generate_caret_indent(std::size_t col, string_view line) {
+    std::string generate_caret_indent(std::size_t col, std::string_view line) {
         line = line.substr(0, col);
         std::string result;
         for (char c : line) {
@@ -492,7 +493,7 @@ namespace diagnostic {
         return result;
     }
 
-    string_view compute_nth_line(string_view data, std::size_t line) {
+    std::string_view compute_nth_line(std::string_view data, std::size_t line) {
         std::size_t lno = 0;
         std::size_t line_start = 0;
         std::size_t i;
@@ -527,7 +528,7 @@ namespace diagnostic {
     }
 
     void emit_diagnostic(const info& info,
-                         optional<location> loc,
+                         std::optional<location> loc,
                          const std::string& msg) {
         auto original_loc = loc;
         update_exit_code(info.category);

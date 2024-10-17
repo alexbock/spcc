@@ -3,12 +3,12 @@
 
 #include "buffer.hh"
 #include "token.hh"
-#include "optional.hh"
 
 #include <memory>
 #include <regex>
 #include <utility>
 #include <map>
+#include <optional>
 
 namespace pp {
     using buffer_ptrs = std::vector<std::unique_ptr<buffer>>;
@@ -19,7 +19,7 @@ namespace pp {
     std::vector<token> perform_phase_six(std::vector<token> tokens,
                                          buffer_ptrs& extra);
     std::vector<token> perform_phase_seven(const std::vector<token>& tokens);
-    optional<token> convert_pp_token_to_token(token tok);
+    std::optional<token> convert_pp_token_to_token(token tok);
     void remove_whitespace(std::vector<token>& tokens);
 
     struct string_literal_info {
@@ -30,7 +30,7 @@ namespace pp {
             char16,
             char32,
         };
-        string_view body;
+        std::string_view body;
         enum encoding encoding;
     };
     using string_literal_encoding = enum string_literal_info::encoding;
@@ -52,9 +52,9 @@ namespace pp {
     class lexer {
     public:
         lexer(const buffer& buf) : buf(buf) { }
-        optional<token> try_lex(token_kind kind, const std::regex& regex);
+        std::optional<token> try_lex(token_kind kind, const std::regex& regex);
         bool done() const;
-        string_view peek() const;
+        std::string_view peek() const;
         std::size_t index() const { return index_; }
         void select(token tok);
 
@@ -67,13 +67,13 @@ namespace pp {
     };
 
     struct macro {
-        string_view name;
+        std::string_view name;
         location loc;
         std::vector<token> body;
         bool predefined = false;
         bool being_replaced = false;
 
-        std::vector<string_view> param_names;
+        std::vector<std::string_view> param_names;
         bool function_like = false;
         bool variadic = false;
     };
@@ -96,9 +96,9 @@ namespace pp {
             TAKE,
         };
 
-        optional<std::size_t> find(ws_mode space, ws_mode newline);
-        optional<token> peek(ws_mode space, ws_mode newline);
-        optional<token> get(ws_mode space, ws_mode newline);
+        std::optional<std::size_t> find(ws_mode space, ws_mode newline);
+        std::optional<token> peek(ws_mode space, ws_mode newline);
+        std::optional<token> get(ws_mode space, ws_mode newline);
         std::vector<token> finish_line();
         void finish_directive_line(token name);
 
@@ -116,7 +116,7 @@ namespace pp {
         void handle_non_directive();
 
         void maybe_diagnose_macro_redefinition(const macro& def) const;
-        optional<std::vector<token>> maybe_expand_macro();
+        std::optional<std::vector<token>> maybe_expand_macro();
         std::vector<token> handle_concatenation(std::vector<token> in);
         void remove_placemarkers(std::vector<token>& v);
         token make_placemarker();
@@ -132,7 +132,7 @@ namespace pp {
         std::unique_ptr<buffer> buf;
         std::vector<token> tokens;
         std::vector<token> out;
-        std::map<string_view, macro> macros;
+        std::map<std::string_view, macro> macros;
         std::vector<std::unique_ptr<buffer>> extra_buffers;
         std::unique_ptr<raw_buffer> placemarker_buffer;
         std::size_t index = 0;

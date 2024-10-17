@@ -4,9 +4,9 @@
 #include "token.hh"
 #include "type.hh"
 #include "buffer.hh"
-#include "optional.hh"
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace parse {
@@ -56,7 +56,7 @@ namespace parse {
     };
 
     struct decl_spec {
-        optional<location> loc_start;
+        std::optional<location> loc_start;
         parser* p = nullptr;
         std::vector<storage_class> storage_classes;
         std::vector<type_qualifier> type_qualifiers;
