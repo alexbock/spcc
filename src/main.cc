@@ -83,7 +83,7 @@ void process_input_files() {
         diagnose(diagnostic::id::no_input_files, {});
     }
     for (const auto& filename : options::state.input_filenames) {
-        if (!util::ends_with(filename, ".c")) {
+        if (!filename.ends_with(".c")) {
             diagnose(diagnostic::id::input_file_not_dot_c, {}, filename);
         }
         std::ifstream file{filename};

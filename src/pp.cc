@@ -12,8 +12,6 @@
 #include <set>
 
 using diagnostic::diagnose;
-using util::starts_with;
-using util::ends_with;
 using util::reverse_adaptor;
 
 std::map<std::string, std::string> trigraphs = {
@@ -93,9 +91,9 @@ std::unique_ptr<buffer> pp::perform_phase_two(std::unique_ptr<buffer> in) {
     // a source file that is not empty shall end in a newline character,
     // which shall not be immediately preceded by a backslash character
     // before any such splicing takes place
-    if (!out->parent()->data().empty() && !ends_with(out->data(), "\n")) {
+    if (!out->parent()->data().empty() && !out->data().ends_with("\n")) {
         location loc{*out, out->data().size()};
-        if (ends_with(out->parent()->data(), "\\\n")) {
+        if (out->parent()->data().ends_with("\\\n")) {
             // if the file ended with a splice, point at the backslash
             // instead of the empty line
             loc = { *out->parent(), out->parent()->data().size() - 2 };
@@ -229,8 +227,8 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
             assert(it != punctuator_table.end()); // table doesn't match regex
             tok.punc = it->second;
         } else if (tok.is(token::space)) {
-            if (starts_with(tok.spelling, "/*")) {
-                if (!ends_with(tok.spelling, "*/")) {
+            if (tok.spelling.starts_with("/*")) {
+                if (!tok.spelling.ends_with("*/")) {
                     const auto loc = tok.range.first;
                     diagnose(diagnostic::id::pp3_incomplete_comment, loc);
                     tok.kind = token::newline;
@@ -1153,19 +1151,19 @@ pp::string_literal_info pp::analyze_string_literal(const token& tok) {
     string_literal_info result;
     result.encoding = string_literal_encoding::plain;
     std::size_t prefix_length = 0;
-    if (starts_with(tok.spelling, "u8")) {
+    if (tok.spelling.starts_with("u8")) {
         result.encoding = string_literal_encoding::utf8;
         prefix_length = 2;
-    } else if (starts_with(tok.spelling, "L")) {
+    } else if (tok.spelling.starts_with("L")) {
         result.encoding = string_literal_encoding::wchar;
         prefix_length = 1;
-    } else if (starts_with(tok.spelling, "u")) {
+    } else if (tok.spelling.starts_with("u")) {
         result.encoding = string_literal_encoding::char16;
         prefix_length = 1;
-    } else if (starts_with(tok.spelling, "U")) {
+    } else if (tok.spelling.starts_with("U")) {
         result.encoding = string_literal_encoding::char32;
         prefix_length = 1;
-    } else assert(starts_with(tok.spelling, "\""));
+    } else assert(tok.spelling.starts_with("\""));
     assert(tok.spelling.size() > 2 + prefix_length);
     std::size_t body_length = tok.spelling.size() - 2 - prefix_length;
     result.body = tok.spelling.substr(prefix_length + 1, body_length);

@@ -9,7 +9,6 @@
 #include <iostream>
 #include <optional>
 
-using util::starts_with;
 using diagnostic::diagnose;
 
 options::config options::state;
@@ -201,13 +200,13 @@ void options::parse(int argc, char** argv) {
     std::vector<std::string> args(argv + 1, argv + argc);
     for (auto& arg : args) {
         if (state.mode == run_mode::option_parsing_error) return;
-        if (starts_with(arg, "-")) {
+        if (arg.starts_with("-")) {
             std::string long_form = "";
             std::optional<std::string> opt_arg;
-            if (starts_with(arg, "--")) {
+            if (arg.starts_with("--")) {
                 long_form = arg.substr(2);
                 long_form = long_form.substr(0, long_form.find('='));
-                if (arg.find('=') != std::string::npos) {
+                if (arg.contains('=')) {
                     opt_arg = arg.substr(arg.find('=') + 1);
                 }
             } else {

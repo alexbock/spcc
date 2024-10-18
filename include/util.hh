@@ -8,15 +8,6 @@
 #include <string_view>
 
 namespace util {
-    inline bool starts_with(std::string_view haystack, std::string_view needle) {
-        return haystack.substr(0, needle.size()) == needle;
-    }
-
-    inline bool ends_with(std::string_view haystack, std::string_view needle) {
-        if (needle.size() > haystack.size()) return false;
-        return haystack.substr(haystack.size() - needle.size()) == needle;
-    }
-
     inline std::string ltrim(const std::string& s) {
         auto start = s.find_first_not_of(' ');
         if (start != std::string::npos) return s.substr(start);
