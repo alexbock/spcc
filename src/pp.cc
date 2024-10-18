@@ -244,8 +244,7 @@ std::vector<token> pp::perform_phase_three(const buffer& in) {
              sequence between the " delimiters, the behavior is undefined.
             */
             auto range = tok.spelling.substr(1, tok.spelling.size() - 2);
-            // TODO implement find for std::string_view to avoid this allocation
-            auto haystack = std::string(range);
+            auto haystack = range;
             for (const auto seq : header_name_undef_seqs) {
                 auto pos = haystack.find(seq);
                 if (pos != std::string::npos) {
