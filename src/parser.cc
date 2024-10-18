@@ -10,8 +10,7 @@ using diagnostic::diagnose;
 
 namespace parse {
     void node::dump(std::size_t indent) const {
-        std::cerr << std::string(indent * 4, ' ');
-        std::cerr << get_dump_info() << "\n";
+        std::println(stderr, "{}{}", std::string(indent * 4, ' '), get_dump_info());
         const auto children = this->children();
         for (auto child : children) {
             child->dump(indent + 1);

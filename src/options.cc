@@ -284,19 +284,17 @@ void options::validate_sizes() {
 
 void options::dump() {
     if (!state.input_filenames.empty()) {
-        std::cout << "input filenames:\n";
+        std::println("input filenames:");
         for (const auto& filename : state.input_filenames) {
-            std::cout << "\t" << filename << "\n";
+            std::println("\t{}", filename);
         }
     }
 
-    std::cout << "plain char: ";
-    if (state.is_char_signed) std::cout << "signed\n";
-    else std::cout << "unsigned\n";
+    std::println("plain char: {}", state.is_char_signed ? "signed" : "unsigned");
 
-    std::cout << "bits per byte: " << state.sizes.bits_per_byte << "\n";
-    std::cout << "sizeof(short): " << state.sizes.short_bytes << "\n";
-    std::cout << "sizeof(int): " << state.sizes.int_bytes << "\n";
-    std::cout << "sizeof(long): " << state.sizes.long_bytes << "\n";
-    std::cout << "sizeof(long long): " << state.sizes.long_long_bytes << "\n";
+    std::println("bits per byte: {}", state.sizes.bits_per_byte);
+    std::println("sizeof(short): {}", state.sizes.short_bytes);
+    std::println("sizeof(int): {}", state.sizes.int_bytes);
+    std::println("sizeof(long): {}", state.sizes.long_bytes);
+    std::println("sizeof(long long): {}", state.sizes.long_long_bytes);
 }

@@ -14,6 +14,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <print>
 
 using diagnostic::diagnose;
 using namespace platform::stream;
@@ -56,11 +57,11 @@ int main(int argc, char** argv) {
 }
 
 void show_help() {
-    std::cout << "help is not yet implemented\n";
+    std::println("help is not yet implemented");
 }
 
 void show_version() {
-    std::cout << "spcc 0.1 (c) 2016 Alexander Bock\n";
+    std::println("spcc 0.1 (c) 2016-2024 Alexander Bock\n");
 }
 
 static void debug_dump_tokens(const std::vector<token>& tokens) {
@@ -68,12 +69,12 @@ static void debug_dump_tokens(const std::vector<token>& tokens) {
     for (const auto tok : tokens) {
         if (!first) {
             set_color(stdout, color::blue);
-            std::cout << "·";
+            std::print(".");
             reset_attributes(stdout);
         }
         first = false;
 
-        std::cout << tok.spelling;
+        std::print("{}", tok.spelling);
     }
 }
 
@@ -105,9 +106,9 @@ void process_input_files() {
         pp::buffer_ptrs extra_buffers;
         tokens = pp::perform_phase_six(std::move(tokens), extra_buffers);
         tokens = pp::perform_phase_seven(tokens);
-        std::cout << "\n";
+        std::println("");
         debug_dump_tokens(tokens);
-        std::cout << "\n";
+        std::println("");
     }
 }
 
@@ -154,7 +155,7 @@ void debug_scratch() {
     for (const auto& id : idl) {
         id.declarator->dump();
         if (id.init) {
-            std::cerr << " = ";
+            std::print(stderr, " = ");
             id.init->dump();
         }
     }

@@ -28,13 +28,13 @@ static void run_test(bool passed, const char* expr,
         col = color::red;
     }
     set_color(stdout, col);
-    std::cout << result << ": ";
+    std::print("{}: ", result);
     reset_attributes(stdout);
     set_style(stdout, style::bold);
     set_color(stdout, color::white);
-    std::cout << expr;
+    std::print("{}", expr);
     reset_attributes(stdout);
-    std::cout << " (" << __FILE__ << ":" << __LINE__ << ")\n";
+    std::println(" ({}:{})", __FILE__, __LINE__);
 }
 
 void test::run_tests() {
@@ -44,7 +44,7 @@ void test::run_tests() {
 }
 
 void run_derived_buffer_tests() {
-    std::cout << "running derived buffer tests...\n";
+    std::println("running derived buffer tests...");
     auto rb = std::make_unique<raw_buffer>("<test>", "this is a test");
     auto db = std::make_unique<derived_buffer>(std::move(rb));
     db->propagate(5);
@@ -66,7 +66,7 @@ void run_derived_buffer_tests() {
 }
 
 void run_utf8_tests() {
-    std::cout << "running UTF-8 tests...\n";
+    std::println("running UTF-8 tests...");
     TEST(utf8::is_ascii('a'));
     TEST(utf8::is_ascii('~'));
     TEST(utf8::is_ascii('z'));
@@ -99,7 +99,7 @@ void run_utf8_tests() {
 }
 
 void run_pp_regex_tests() {
-    std::cout << "running preprocessor regex tests...\n";
+    std::println("running preprocessor regex tests...");
     TEST(std::regex_match("<foo.h>", pp::regex::header_name));
     TEST(std::regex_match("< bar/cat.hh >", pp::regex::header_name));
     TEST(std::regex_match("\"foo.h\"", pp::regex::header_name));

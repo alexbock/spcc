@@ -47,4 +47,4 @@ add_executable(spcc
     ${SOURCE}
     ${INCLUDE}
 )
-set_property(TARGET spcc PROPERTY CXX_STANDARD 20)
+set_property(TARGET spcc PROPERTY CXX_STANDARD 23)

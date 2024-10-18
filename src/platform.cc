@@ -1,6 +1,8 @@
 #include "platform.hh"
 #include "options.hh"
 
+#include <print>
+
 #if defined(PLATFORM_WIN32)
 #include <io.h>
 #elif defined(PLATFORM_POSIX)
@@ -15,22 +17,22 @@ void platform::stream::set_color(FILE* f, color c) {
 #elif defined(PLATFORM_POSIX)
     switch (c) {
         case color::red:
-            std::fprintf(f, "\x1B[31m");
+            std::print(f, "\x1B[31m");
             break;
         case color::green:
-            std::fprintf(f, "\x1B[32m");
+            std::print(f, "\x1B[32m");
             break;
         case color::blue:
-            std::fprintf(f, "\x1B[34m");
+            std::print(f, "\x1B[34m");
             break;
         case color::yellow:
-            std::fprintf(f, "\x1B[33m");
+            std::print(f, "\x1B[33m");
             break;
         case color::magenta:
-            std::fprintf(f, "\x1B[35m");
+            std::print(f, "\x1B[35m");
             break;
         case color::white:
-            std::fprintf(f, "\x1B[97m");
+            std::print(f, "\x1B[97m");
             break;
     }
 #endif
@@ -44,14 +46,14 @@ void platform::stream::set_style(FILE* f, style s) {
 #elif defined(PLATFORM_POSIX)
     switch (s) {
         case style::bold:
-            std::fprintf(f, "\x1B[1m");
+            std::print(f, "\x1B[1m");
             break;
     }
 #endif
 }
 
 void platform::stream::reset_attributes(FILE* f) {
-    std::fprintf(f, "\x1B[0m");
+    std::print(f, "\x1B[0m");
 }
 
 bool platform::stream::is_terminal(FILE* f) {

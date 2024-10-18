@@ -10,21 +10,18 @@ namespace sem {
     expr::~expr() = default;
 
     void expr::dump(std::size_t indent) const {
-        std::cerr << std::string(indent * 4, ' ');
-        std::cerr << get_dump_name();
-        std::cerr << " ";
-        std::cerr << "0x" << std::hex << (std::uintptr_t)this;
-        std::cerr << " ";
-        std::cerr << get_dump_info();
+        std::print(stderr, "{}{} {} {}",
+                   std::string(indent * 4, ' '),
+                   get_dump_name(),
+                   (std::uintptr_t)this,
+                   get_dump_info());
         if (indent == 0) {
-            std::cerr << " @ ";
             const auto& loc = range().first;
-            std::cerr << loc.buffer().name() << ":";
             const auto line_col = diagnostic::compute_line_col(loc);
-            std::cerr << line_col.first + 1 << ":";
-            std::cerr << line_col.second + 1 << ": ";
+            std::print(stderr, " @ {}: {}: {}: ",
+                       loc.buffer().name(), line_col.first + 1, line_col.second + 1);
         }
-        std::cerr << "\n";
+        std::println(stderr, "");
 
         const auto children = this->children();
         for (auto child : children) {

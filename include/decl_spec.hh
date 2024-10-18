@@ -4,6 +4,7 @@
 #include "token.hh"
 #include "type.hh"
 #include "buffer.hh"
+#include "parser.hh"
 
 #include <memory>
 #include <optional>
@@ -11,9 +12,6 @@
 
 namespace parse {
     using namespace sem;
-
-    class node;
-    class parser;
 
     enum storage_class {
         sc_typedef,

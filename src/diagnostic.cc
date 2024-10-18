@@ -449,10 +449,8 @@ namespace diagnostic {
 
     void emit_file_line_col(location loc) {
         set_color(stdout, color::white);
-        std::cout << loc.buffer().name() << ":";
-        auto line_col = compute_line_col(loc);
-        std::cout << line_col.first + 1 << ":";
-        std::cout << line_col.second + 1 << ": ";
+        const auto line_col = compute_line_col(loc);
+        std::print("{}:{}:{}: ", loc.buffer().name(), line_col.first + 1, line_col.second + 1);
         reset_attributes(stdout);
     }
 
@@ -477,9 +475,9 @@ namespace diagnostic {
     void emit_category_message(category cat, const std::string& msg) {
         set_color(stdout, get_category_color(cat));
         set_style(stdout, style::bold);
-        std::cout << to_string(cat) << ": ";
+        std::print("{}: ", to_string(cat));
         set_color(stdout, color::white);
-        std::cout << msg;
+        std::print("{}", msg);
         reset_attributes(stdout);
     }
 
@@ -511,11 +509,11 @@ namespace diagnostic {
     void emit_snippet_caret(location loc) {
         auto line_col = compute_line_col(loc);
         auto line = compute_nth_line(loc.buffer().data(), line_col.first);
-        std::cout << line << "\n";
+        std::println("{}", line);
         set_color(stdout, color::green);
-        std::cout << generate_caret_indent(line_col.second, line) << "^";
+        std::print("{}^", generate_caret_indent(line_col.second, line));
         reset_attributes(stdout);
-        std::cout << "\n";
+        std::println("");
     }
 
     void update_exit_code(category cat) {
@@ -537,10 +535,10 @@ namespace diagnostic {
         emit_category_message(info.category, msg);
         if (!info.citation.empty()) {
             set_color(stdout, color::white);
-            std::cout << " " << info.citation;
+            std::print(" {}", info.citation);
             reset_attributes(stdout);
         }
-        std::cout << "\n";
+        std::println("");
         if (loc) emit_snippet_caret(*loc);
 
         if (loc && loc->buffer().included_at()) {
